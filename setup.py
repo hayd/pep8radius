@@ -14,14 +14,14 @@ INSTALL_REQUIRES = (
 
 with open('README.md') as readme:
     setup(
-        name='pep8radius',
+        name='Better-Than-You-Found-It',
         version=VERSION,
-        description="pep8 only the files you've touched in the git branch/commit.",
+        description="Tidy up (autopep8) only the lines in the files touched in the git branch/commit.",
         long_description=readme.read(),
         license='MIT License',
         author='Andy Hayden',
         author_email='andyhayden1@gmail.com',
-        url='https://github.com/hayd/pep8-radius',
+        url='https://github.com/hayd/btyfi',
         classifiers=[
             'Development Status :: 3 - Alpha',
             'Environment :: Console',
@@ -41,8 +41,8 @@ with open('README.md') as readme:
         ],
         keywords='automation, pep8, format, autopep8, git',
         install_requires=INSTALL_REQUIRES,
-        test_suite='test.test_radius',
-        py_modules=['pep8radius'],
+        test_suite='test.test_btyfi',
+        py_modules=['btyfi'],
         zip_safe=False,
-        entry_points={'console_scripts': ['pep8radius = pep8radius:main']},
+        entry_points={'console_scripts': ['btyfi = btyfi:main']},
     )

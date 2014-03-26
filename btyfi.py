@@ -5,9 +5,10 @@ from sys import exit
 
 
 def main():
-    description = "pep8 only the files you've touched."
-    epilog = ("run before you do a commit to tidy, "
-              " or against a branch before merging.")
+    description = ("Tidy up (autopep8) only the lines in the files touched "
+                   "in the git branch/commit.")
+    epilog = ("Run before you do a commit to tidy, "
+              "or against a branch before merging.")
     parser = argparse.ArgumentParser(description=description,
                                      epilog=epilog)
     parser.add_argument('rev',
@@ -21,10 +22,10 @@ def main():
 
     args = parser.parse_args()
 
-    pep8radius(rev=args.rev, verbose=args.verbose)
+    btyfi(rev=args.rev, verbose=args.verbose)
 
 
-def pep8radius(rev=None, verbose=False):
+def btyfi(rev=None, verbose=False):
     if rev is None:
         cmd = ['git', 'diff', '--name-only']
     else:
