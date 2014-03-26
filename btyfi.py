@@ -157,7 +157,7 @@ def line_numbers_from_file_diff(diff):
                                if line.startswith('@@')][::-1]
     # Note: we do this backwards, as autopep8 can add/remove lines
 
-    for u in udiffs:
+    for u in lines_with_line_numbers:
         start, end = map(str, udiff_line_start_and_end(u))
         yield (start, end)
 
