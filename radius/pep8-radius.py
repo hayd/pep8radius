@@ -11,13 +11,13 @@ def main():
     parser = argparse.ArgumentParser(description=description,
                                      epilog=epilog)
     parser.add_argument('rev',
-                        help='commit hash or name of branch to compare against',
+                        help='commit or name of branch to compare against',
                         nargs='?')
 
     group = parser.add_mutually_exclusive_group(required=False)
     group.add_argument('-v', '--verbose',
-                        help='print which files/lines are being pep8d',
-                        action='store_true')
+                       help='print which files/lines are being pep8d',
+                       action='store_true')
 
     args = parser.parse_args()
 
@@ -50,7 +50,7 @@ def change_line_ranges(f, rev=None, verbose=False):
         cmd = ['git', 'diff', rev, f]
 
     udiffs = [line for line in check_output(cmd).splitlines()
-                    if line.startswith('@@')][::-1]
+              if line.startswith('@@')][::-1]
     # Note: we do this backwards, as autopep8 can add/remove lines
 
     if verbose:
@@ -59,7 +59,8 @@ def change_line_ranges(f, rev=None, verbose=False):
         start, end = map(str, udiff_start_and_end(u))
         if verbose:
             print('- between %s and %s' % (start, end))
-        pep_log = check_output(['autopep8', '--in-place', '--range', start, end, f])
+        pep_log = check_output(
+            ['autopep8', '--in-place', '--range', start, end, f])
     if verbose:
         print ('Completed pep8-radius on %s\n' % f)
 
@@ -75,11 +76,9 @@ def udiff_start_and_end(u):
 
     """
     # I *think* we only care about the + lines?
-    line_numbers = [map(int, x.split(',')) for x in re.findall('(?<=[+])\d+,\d+', u)][0]
+    line_numbers = [map(int, x.split(','))
+                    for x in re.findall('(?<=[+])\d+,\d+', u)][0]
     return line_numbers[0], sum(line_numbers)
-
-class GitDiffError(CalledProcessError):
-    pass
 
 
 if __name__ == "__main__":
