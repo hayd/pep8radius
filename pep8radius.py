@@ -21,10 +21,10 @@ def main():
 
     args = parser.parse_args()
 
-    pep8_radius(rev=args.rev, verbose=args.verbose)
+    pep8radius(rev=args.rev, verbose=args.verbose)
 
 
-def pep8_radius(rev=None, verbose=False):
+def pep8radius(rev=None, verbose=False):
     if rev is None:
         cmd = ['git', 'diff', '--name-only']
     else:
@@ -50,13 +50,14 @@ def change_line_ranges(f, rev=None, verbose=False):
         cmd = ['git', 'diff', rev, f]
 
     udiffs = [line for line in check_output(cmd).splitlines()
-              if line.startswith('@@')][::-1]
+              if line.startswith(b'@@')][::-1]
     # Note: we do this backwards, as autopep8 can add/remove lines
 
     if verbose:
         print('Applying autopep8 to lines in %s:' % f)
     for u in udiffs:
-        start, end = map(str, udiff_start_and_end(u))
+        start, end = map(str,
+                         udiff_start_and_end(u.decode('utf-8')))
         if verbose:
             print('- between %s and %s' % (start, end))
         pep_log = check_output(
@@ -76,8 +77,8 @@ def udiff_start_and_end(u):
 
     """
     # I *think* we only care about the + lines?
-    line_numbers = [map(int, x.split(','))
-                    for x in re.findall('(?<=[+])\d+,\d+', u)][0]
+    line_numbers = re.findall('(?<=[+])\d+,\d+', u)[0].split(',')
+    line_numbers = list(map(int, line_numbers))
     return line_numbers[0], sum(line_numbers)
 
 

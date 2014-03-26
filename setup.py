@@ -5,7 +5,7 @@ from setuptools import setup
 from sys import version_info
 
 
-VERSION = '0.1'
+VERSION = '0.3'
 
 INSTALL_REQUIRES = (
     ['autopep8'] +
@@ -42,7 +42,7 @@ with open('README.md') as readme:
         keywords='automation, pep8, format, autopep8, git',
         install_requires=INSTALL_REQUIRES,
         test_suite='test.test_radius',
-        py_modules=['radius'],
+        py_modules=['pep8radius'],
         zip_safe=False,
-        entry_points={'console_scripts': ['pep8-radius = radius:main']},
+        entry_points={'console_scripts': ['pep8radius = pep8radius:main']},
     )
