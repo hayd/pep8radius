@@ -229,7 +229,7 @@ class RadiusHg(Radius):
     def parse_diff_filenames(diff_files):
         "Parse the output of filenames_diff_cmd"
         #TODO promote this to Radius ?
-        return re.findall('(?<=[$| |\n]).*\.py', diff_lines)
+        return re.findall('(?<=[$| |\n]).*\.py', diff_files)
 
 
 if __name__ == "__main__":
