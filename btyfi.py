@@ -1,3 +1,4 @@
+from __future__ import print_function
 import argparse
 import re
 from subprocess import check_output, STDOUT, CalledProcessError
@@ -71,11 +72,19 @@ class Radius:
 
     def btyfi(self):
         "Better than you found it. autopep8 the diff lines in each py file"
-        for f in self.filenames_diff:
+        n = len(self.filenames_diff)
+
+        if self.verbose:
+            print ('Applying autopep8 to touched lines in %s file(s)'
+                   % len(self.filenames_diff))
+
+        for i, f in enumerate(self.filenames_diff, start=1):
+            if self.verbose:
+                print('%s/%s: Applying pep8radius to %s on lines:' % (i, n, f))
             self.pep8radius_file(f)
 
         if self.verbose:
-            print ('Pep8radius complete, happy camping!')
+            print ('Pep8radius complete, better than you found it!')
 
     def pep8radius_file(self, f):
         "Apply autopep8 to the diff lines of file f"
@@ -84,18 +93,19 @@ class Radius:
         diff = check_output(cmd).decode('utf-8')
 
         if self.verbose:
-            print('Applying autopep8 to lines in %s:' % f)
+            print('     ', end='')
 
         for start, end in self.line_numbers_from_file_diff(diff):
             self.autopep8_line_range(f, start, end)
 
         if self.verbose:
-            print ('Completed pep8radius on %s\n' % f)
+            print ('')
 
     def autopep8_line_range(self, f, start, end):
         "Apply autopep8 between start and end of file f"
         if self.verbose:
-            print('- between %s and %s' % (start, end))
+            print('%s-%s' % (end, start), end=', ')
+
         pep_log = check_output(['autopep8', '--in-place', '--range',
                                 start, end, f])
 
