@@ -5,7 +5,8 @@ from setuptools import setup
 from sys import version_info
 
 
-VERSION = '0.3'
+VERSION = '0.3.2'
+NAME = 'btyfi'
 
 INSTALL_REQUIRES = (
     ['autopep8'] +
@@ -14,9 +15,10 @@ INSTALL_REQUIRES = (
 
 with open('README.md') as readme:
     setup(
-        name='Better-Than-You-Found-It',
+        name=NAME,
         version=VERSION,
-        description="Tidy up (autopep8) only the lines in the files touched in the git branch/commit.",
+        description="Tidy up (autopep8) only the lines in the files touched "
+                    "in the git or hg branch/commit.",
         long_description=readme.read(),
         license='MIT License',
         author='Andy Hayden',
@@ -39,10 +41,11 @@ with open('README.md') as readme:
             'Topic :: Software Development :: Libraries :: Python Modules',
             'Topic :: Software Development :: Quality Assurance',
         ],
-        keywords='automation, pep8, format, autopep8, git',
+        keywords='automation, pep8, format, autopep8, git, hg, mercurial',
         install_requires=INSTALL_REQUIRES,
         test_suite='test.test_btyfi',
         py_modules=['btyfi'],
         zip_safe=False,
-        entry_points={'console_scripts': ['btyfi = btyfi:main']},
+        entry_points={'console_scripts': ['btyfi = btyfi:main',
+                                          'pep8radius = btyfi:main']},
     )
