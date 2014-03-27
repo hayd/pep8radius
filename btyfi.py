@@ -74,17 +74,14 @@ class Radius:
         "Better than you found it. autopep8 the diff lines in each py file"
         n = len(self.filenames_diff)
 
-        if self.verbose:
-            print ('Applying autopep8 to touched lines in %s file(s)'
-                   % len(self.filenames_diff))
+        self.p('Applying autopep8 to touched lines in %s file(s)'
+               % len(self.filenames_diff))
 
         for i, f in enumerate(self.filenames_diff, start=1):
-            if self.verbose:
-                print('%s/%s: Applying pep8radius to %s on lines:' % (i, n, f))
+            self.p('%s/%s: Applying pep8radius to %s on lines:' % (i, n, f))
             self.pep8radius_file(f)
 
-        if self.verbose:
-            print ('Pep8radius complete, better than you found it!')
+        self.p('Pep8radius complete, better than you found it!')
 
     def pep8radius_file(self, f):
         "Apply autopep8 to the diff lines of file f"
@@ -92,19 +89,14 @@ class Radius:
         cmd = self.file_diff_cmd(f)
         diff = check_output(cmd).decode('utf-8')
 
-        if self.verbose:
-            print('     ', end='')
-
+        self.p('     ', end='')
         for start, end in self.line_numbers_from_file_diff(diff):
             self.autopep8_line_range(f, start, end)
-
-        if self.verbose:
-            print ('')
+        self.p('')
 
     def autopep8_line_range(self, f, start, end):
         "Apply autopep8 between start and end of file f"
-        if self.verbose:
-            print('%s-%s' % (end, start), end=', ')
+        self.p('%s-%s' % (end, start), end=', ')
 
         pep_log = check_output(['autopep8', '--in-place', '--range',
                                 start, end, f])
@@ -191,6 +183,10 @@ class Radius:
 
         # TODO work out if this should this be +3 and -3 ?
         return line_numbers[0], sum(line_numbers)
+
+    def p(self, something_to_print, end=None):
+        if self.verbose:
+            print(something_to_print, end=end)
 
 
 class RadiusGit(Radius):
