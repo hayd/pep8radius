@@ -5,7 +5,7 @@ from setuptools import setup
 from sys import version_info
 
 
-VERSION = '0.3.2'
+VERSION = '0.3.3'
 NAME = 'btyfi'
 
 INSTALL_REQUIRES = (

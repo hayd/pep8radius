@@ -20,14 +20,14 @@ def main():
     group.add_argument('-v', '--verbose',
                        help='print which files/lines are being pep8d',
                        action='store_true')
-
     group.add_argument('--version',
-                       help='print version number exit',
+                       help='print version number and exit',
                        action='store_true')
+
     args = parser.parse_args()
 
     if args.version:
-        print('0.3.2')
+        print('0.3.3')
         exit(0)
 
     try:
@@ -181,8 +181,10 @@ class Radius:
         line_numbers = re.findall('(?<=[+])\d+,\d+', u)[0].split(',')
         line_numbers = list(map(int, line_numbers))
 
-        # TODO work out if this should this be +3 and -3 ?
-        return line_numbers[0], sum(line_numbers)
+        PADDING_LINES = 3  # TODO perhaps this is configuarable?
+
+        return (line_numbers[0] + PADDING_LINES,
+                sum(line_numbers) - PADDING_LINES)
 
     def p(self, something_to_print, end=None):
         if self.verbose:
