@@ -27,7 +27,7 @@ def main():
     args = parser.parse_args()
 
     if args.version:
-        print('0.3.3')
+        print('0.4')
         exit(0)
 
     try:

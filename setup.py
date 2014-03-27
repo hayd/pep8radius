@@ -5,7 +5,7 @@ from setuptools import setup
 from sys import version_info
 
 
-VERSION = '0.3.3'
+VERSION = '0.4'
 NAME = 'Better-Than-You-Found-It'  # 'pep8radius'
 
 INSTALL_REQUIRES = (
