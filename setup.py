@@ -6,7 +6,7 @@ from sys import version_info
 
 
 VERSION = '0.3.3'
-NAME = 'btyfi'
+NAME = 'Better-Than-You-Found-It'  # 'pep8radius'
 
 INSTALL_REQUIRES = (
     ['autopep8'] +
