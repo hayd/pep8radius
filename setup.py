@@ -1,12 +1,21 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+from ast import parse
 from setuptools import setup
 from sys import version_info
 
 
-VERSION = '0.4'
 NAME = 'Better-Than-You-Found-It'  # 'pep8radius'
+
+
+def version():
+    """Return version string."""
+    with open('btyfi.py') as input_file:
+        for line in input_file:
+            if line.startswith('__version__'):
+                return parse(line).body[0].value.s
+
 
 INSTALL_REQUIRES = (
     ['autopep8'] +
@@ -16,7 +25,7 @@ INSTALL_REQUIRES = (
 with open('README.md') as readme:
     setup(
         name=NAME,
-        version=VERSION,
+        version=version(),
         description="Tidy up (autopep8) only the lines in the files touched "
                     "in the git or hg branch/commit.",
         long_description=readme.read(),

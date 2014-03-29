@@ -1,4 +1,4 @@
-Better-Than-You-Found-It (btyfi) aka pep8radius
+pep8radius aka Better-Than-You-Found-It (btyfi) 
 -----------------------------------------------
 
 Clean (using autopep8) only the parts of the files which you have touched in the last commit, or against another commit/branch.
@@ -14,10 +14,12 @@ Usage
 
 - Move to project directory
 - Make some changes to the project
-- Run btyfi
+- Run pep8radius
 - Commit your changes
 
 Against a branch you can use the same syntax as with git diff:
 
-- btyfi master  # branch name
-- btyfi c12166f    # commit hash
+- pep8radius master  # branch name
+- pep8radius c12166f    # commit hash
+
+*Note: can also use btyfi alias for pep8radius.*

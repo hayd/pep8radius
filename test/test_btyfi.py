@@ -30,12 +30,12 @@ class TestRadius(TestCase):
 
         # run btyfi
         r = Radius.from_vc(vc=self.vc)
-        r.btyfi()
+        r.pep8radius()
         # compare output to desired
         self.assert_(filecmp.cmp(bad, better))
 
         # Run again
-        r.btyfi()
+        r.pep8radius()
         self.assert_(filecmp.cmp(bad, better))
 
 

@@ -5,6 +5,9 @@ from subprocess import check_output, STDOUT, CalledProcessError
 from sys import exit
 
 
+__version__ = version = '0.5a'
+
+
 def main():
     description = ("Tidy up (autopep8) only the lines in the files touched "
                    "in the git branch/commit.")
@@ -27,11 +30,11 @@ def main():
     args = parser.parse_args()
 
     if args.version:
-        print('0.4')
+        print(version)
         exit(0)
 
     try:
-        r = Radius.from_vc(rev=args.rev, verbose=args.verbose)
+        r = Radius.new(rev=args.rev, verbose=args.verbose)
     except NotImplementedError as e:
         print(e.message)
         exit(1)
@@ -41,7 +44,7 @@ def main():
         print(output)
         exit(c.returncode)
 
-    r.btyfi()
+    r.pep8radius()
 
 
 class Radius:
@@ -51,18 +54,17 @@ class Radius:
         self.rev = rev if rev is not None else self.current_branch()
         self.filenames_diff = self.get_filenames_diff()
 
-    @classmethod
-    def from_vc(self, rev=None, verbose=False, vc=None):
+    @staticmethod
+    def new(rev=None, verbose=False, vc=None):
         """
         Create subclass instance of Radius with correct version control
 
-        e.g. RadiusGit
+        e.g. RadiusGit if using git
 
         """
         if vc is None:
-            vc = self.which_version_control()
+            vc = which_version_control()
 
-        radii = {'git': RadiusGit, 'hg': RadiusHg}
         try:
             r = radii[vc]
         except KeyError:
@@ -70,7 +72,7 @@ class Radius:
 
         return r(rev=rev, verbose=verbose)
 
-    def btyfi(self):
+    def pep8radius(self):
         "Better than you found it. autopep8 the diff lines in each py file"
         n = len(self.filenames_diff)
 
@@ -97,49 +99,17 @@ class Radius:
     def autopep8_line_range(self, f, start, end):
         "Apply autopep8 between start and end of file f"
         self.p('%s-%s' % (end, start), end=', ')
+        # TODO flush output (on python 3)
 
         pep_log = check_output(['autopep8', '--in-place', '--range',
                                 start, end, f])
-
-    @classmethod
-    def which_version_control(cls):
-        """
-        Try to see if they are using git or hg.
-        return git, hg or raise NotImplementedError.
-
-        """
-        if cls.using_git():
-            return 'git'
-
-        if cls.using_hg():
-            return 'hg'
-
-        # Not supported (yet)
-        raise NotImplementedError("Unknown version control system. "
-                                  "Ensure you're in the project directory.")
-
-    @staticmethod
-    def using_git():
-        try:
-            git_log = check_output(["git", "log"], stderr=STDOUT)
-            return True
-        except CalledProcessError:
-            return False
-
-    @staticmethod
-    def using_hg():
-        try:
-            hg_log = check_output(["hg", "log"], stderr=STDOUT)
-            return True
-        except CalledProcessError:
-            return False
 
     def get_filenames_diff(self):
         "Get the py files which have been changed since rev"
 
         cmd = self.filenames_diff_cmd()
 
-        # This may raise a CalledProcessError
+        # Note: This may raise a CalledProcessError
         diff_files_b = check_output(cmd, stderr=STDOUT)
 
         diff_files_u = diff_files_b.decode('utf-8')
@@ -148,48 +118,57 @@ class Radius:
         # TODO ensure filter of py is done in filenames_diff_cmd
         return [f for f in diff_files if f.endswith('.py')]
 
-    @classmethod
-    def line_numbers_from_file_diff(cls, diff):
-        """
-        Parse a udiff, return iterator of tuples of (start, end) line numbers.
-
-        Note: they are returned in descending order (autopep8 can +- lines)
-
-        Potentially this needs to be overridden if not using udiff...
-
-        """
-        lines_with_line_numbers = [line for line in diff.splitlines()
-                                   if line.startswith('@@')][::-1]
-        # Note: we do this backwards, as autopep8 can add/remove lines
-
-        for u in lines_with_line_numbers:
-            start, end = map(str, cls.udiff_line_start_and_end(u))
-            yield (start, end)
-
-    @staticmethod
-    def udiff_line_start_and_end(u):
-        """
-        Extract start line and end from udiff line
-
-        Example
-        -------
-        '@@ -638,9 +638,17 @@ class GroupBy(PandasObject):'
-        Returns the start line 638 and end line (638 + 17) (the lines added).
-
-        """
-        # I *think* we only care about the + lines?
-        line_numbers = re.findall('(?<=[+])\d+,\d+', u)[0].split(',')
-        line_numbers = list(map(int, line_numbers))
-
-        PADDING_LINES = 3  # TODO perhaps this is configuarable?
-
-        return (line_numbers[0] + PADDING_LINES,
-                sum(line_numbers) - PADDING_LINES)
+    def line_numbers_from_file_diff(self, diff):
+        "Potentially this is vc specific (if not using udiff)"
+        return line_numbers_from_file_udiff(diff)
 
     def p(self, something_to_print, end=None):
         if self.verbose:
             print(something_to_print, end=end)
 
+
+#####   udiff parsing   #####
+#############################
+
+def line_numbers_from_file_udiff(udiff):
+    """
+    Parse a udiff, return iterator of tuples of (start, end) line numbers.
+
+    Note: returned in descending order (as autopep8 can +- lines)
+
+    """
+    lines_with_line_numbers = [line for line in udiff.splitlines()
+                               if line.startswith('@@')][::-1]
+    # Note: we do this backwards, as autopep8 can add/remove lines
+
+    for u in lines_with_line_numbers:
+        start, end = map(str, udiff_line_start_and_end(u))
+        yield (start, end)
+
+
+def udiff_line_start_and_end(u):
+    """
+    Extract start line and end from udiff line
+
+    Example
+    -------
+    '@@ -638,9 +638,17 @@ class GroupBy(PandasObject):'
+    Returns the start line 638 and end line (638 + 17) (the lines added).
+
+    """
+    # I *think* we only care about the + lines?
+    line_numbers = re.findall('(?<=[+])\d+,\d+', u)
+    line_numbers = line_numbers[0].split(',')
+    line_numbers = list(map(int, line_numbers))
+
+    PADDING_LINES = 3  # TODO perhaps this is configuarable?
+
+    return (line_numbers[0] + PADDING_LINES,
+            sum(line_numbers) - PADDING_LINES)
+
+
+#####   vc specific   #####
+###########################
 
 class RadiusGit(Radius):
 
@@ -228,8 +207,44 @@ class RadiusHg(Radius):
     @staticmethod
     def parse_diff_filenames(diff_files):
         "Parse the output of filenames_diff_cmd"
-        #TODO promote this to Radius ?
+        # TODO promote this to Radius ?
         return re.findall('(?<=[$| |\n]).*\.py', diff_files)
+
+
+radii = {'git': RadiusGit, 'hg': RadiusHg}
+
+
+def using_git():
+    try:
+        git_log = check_output(["git", "log"], stderr=STDOUT)
+        return True
+    except CalledProcessError:
+        return False
+
+
+def using_hg():
+    try:
+        hg_log = check_output(["hg", "log"], stderr=STDOUT)
+        return True
+    except CalledProcessError:
+        return False
+
+
+def which_version_control():
+    """
+    Try to see if they are using git or hg.
+    return git, hg or raise NotImplementedError.
+
+    """
+    if using_git():
+        return 'git'
+
+    if using_hg():
+        return 'hg'
+
+    # Not supported (yet)
+    raise NotImplementedError("Unknown version control system. "
+                              "Ensure you're in the project directory.")
 
 
 if __name__ == "__main__":
