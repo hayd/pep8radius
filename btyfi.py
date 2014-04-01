@@ -98,7 +98,7 @@ class Radius:
         self.options.verbose = False
         self.options.in_place = True
         self.options.diff = True
-        # self.options.in_place = False # turn off when testing
+        self.options.in_place = False  # turn off when testing
         self.filenames_diff = self.get_filenames_diff()
 
     @staticmethod
@@ -146,25 +146,22 @@ class Radius:
 
         pep8_diff = []
         for start, end in self.line_numbers_from_file_diff(diff):
-            out = StringIO()
-            self.autopep8_line_range(f, start, end, out)
-            # TODO atm this isn't ouputting anything!
-            pep8_diff.append(out.getvalue())
+            pep8_diff.append(self.autopep8_line_range(f, start, end))
+            self.p('.', end='')
+            sys.stdout.flush()
         self.p('')
 
-        # reversed since pep8radius applied backwards
+        # reversed since pep8radius applies backwards
         pep8_diff = reversed([diff for diff in pep8_diff if diff])
 
         # TODO possibly remove first two lines of not first diffs
         return '\n'.join(pep8_diff)
 
-    def autopep8_line_range(self, f, start, end, output=None):
+    def autopep8_line_range(self, f, start, end):
         "Apply autopep8 between start and end of file f"
-        self.p('.', end='')
-        sys.stdout.flush()
-
         self.options.line_range = [start, end]
-        autopep8.fix_file(f, self.options, output)
+        # TODO work out why this doesn't return diff
+        return autopep8.fix_file(f, self.options)
 
     def get_filenames_diff(self):
         "Get the py files which have been changed since rev"
