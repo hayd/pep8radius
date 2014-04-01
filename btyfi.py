@@ -136,7 +136,7 @@ class Radius:
                 print('\n', pep8_diff)
             # print number of lines fixed
 
-        self.p('\nfixed lines in %s files.' % (i))
+        self.p('\nfixed lines in %s files.' % (i,))
 
     def pep8radius_file(self, f):
         "Apply autopep8 to the diff lines of file f"
