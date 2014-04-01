@@ -35,9 +35,10 @@ def main():
     group.add_argument('--version',
                        help='print version number and exit',
                        action='store_true')
-    group.add_argument('-v', '--verbose',
-                       help='print which files/lines are being pep8d',
-                       action='store_true')
+    parser.add_argument('-v', '--verbose', action='count', dest='verbose',
+                        default=0,
+                        help='print verbose messages; '
+                        'multiple -v result in more verbose messages')
     parser.add_argument('-d', '--diff', action='store_true', dest='diff',
                         help='print the diff for the fixed source')
     parser.add_argument('-p', '--pep8-passes', metavar='n',
@@ -100,7 +101,7 @@ class Radius:
         if not self.options.ignore:
             self.options.ignore = DEFAULT_IGNORE.split(',')
 
-        self.options.verbose = False
+        self.options.verbose = self.options.verbose - 1
         self.options.in_place = True
         self.options.diff = True
         self.options.in_place = False  # turn off when testing
@@ -131,7 +132,8 @@ class Radius:
         self.p('Applying autopep8 to touched lines in %s file(s).'
                % len(self.filenames_diff))
 
-        total_lines_changed = 0
+        i = total_lines_changed = 0
+        pep8_diffs = []
         for i, f in enumerate(self.filenames_diff, start=1):
             self.p('%s/%s: %s: ' % (i, n, f), end='')
 
@@ -140,11 +142,15 @@ class Radius:
             total_lines_changed += lines_changed
             self.p('fixed %s lines.' % lines_changed)
 
-            if self.diff and  pep8_diff:
-                #possibly we want to print a restricted version of diff
-                print( pep8_diff)
+            if pep8_diff:
+                pep8_diffs.append(pep8_diff)
 
         self.p('fixed %s lines in %s files.' % (total_lines_changed, i))
+
+        if self.diff and pep8_diffs:
+            for pep8_diff in pep8_diffs:
+                # possibly we want to print a restricted version of diff
+                print(pep8_diff)
 
     def pep8radius_file(self, f, last_char='\n'):
         "Apply autopep8 to the diff lines of file f"
@@ -155,19 +161,20 @@ class Radius:
         pep8_diff = []
         for start, end in self.line_numbers_from_file_diff(diff):
             pep8_diff.append(self.autopep8_line_range(f, start, end))
-            self.p('.', end='')
+            if self.verbose == 1:
+                self.p('.', end='')
         self.p('', end=last_char)
 
         # reversed since pep8radius applies backwards
         pep8_diff = [diff for diff in pep8_diff if diff][::-1]
 
         for i, diff in enumerate(pep8_diff[1:], start=1):
-            pep8_diff[i] = ''.join(diff.splitlines(True)[2:  ])
+            pep8_diff[i] = ''.join(diff.splitlines(True)[2:])
 
         # TODO possibly remove first two lines of not first diffs
         return '\n'.join(pep8_diff)
 
-    def autopep8_line_range(self, f, start , end ):
+    def autopep8_line_range(self, f, start, end):
         "Apply autopep8 between start and end of file f"
         self.options.line_range = [start, end]
         return autopep8.fix_file(f, self.options)
@@ -233,6 +240,7 @@ def udiff_line_start_and_end(u):
 
     return (line_numbers[0] + PADDING_LINES,
             sum(line_numbers) - PADDING_LINES)
+
 
 def udiff_lines_changes(u):
     """
