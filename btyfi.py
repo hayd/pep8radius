@@ -130,11 +130,12 @@ class Radius:
             self.p('%s/%s: %s: ' % (i, n, f), end='')
             sys.stdout.flush()
             pep8_diff = self.pep8radius_file(f)
-            # TODO parse this diff to extract number of changes
+            # TODO lines_changed = udiff_lines_changes(pep8_diff)
+            # TODO keep running total for last line
             # possibly we want to print a restricted version of diff
             if self.diff and pep8_diff:
                 print('\n', pep8_diff)
-            # print number of lines fixed
+            # remove dots and print number of lines fixed
 
         self.p('\nfixed lines in %s files.' % (i,))
 
@@ -157,7 +158,7 @@ class Radius:
         # TODO possibly remove first two lines of not first diffs
         return '\n'.join(pep8_diff)
 
-    def autopep8_line_range(self, f, start, end):
+    def autopep8_line_range(self, f, start , end ):
         "Apply autopep8 between start and end of file f"
         self.options.line_range = [start, end]
         # TODO work out why this doesn't return diff
@@ -223,6 +224,21 @@ def udiff_line_start_and_end(u):
 
     return (line_numbers[0] + PADDING_LINES,
             sum(line_numbers) - PADDING_LINES)
+
+def udiff_lines_changes(u):
+    """
+    Count line changes in udiff
+
+    'fixed/btyfi.py\n@@ -157,7 +157,11 @@' will extract 7 - 2 * PADDING_LINES
+
+    """
+    removed_changes = re.findall('\n@@\s+\-(\d+,\d+)', u)
+    removed_changes = [map(int, c.split(',')) for c in removed_changes]
+
+    PADDING_LINES = 3  # TODO perhaps this is configuarable?
+    padding = 2 * PADDING_LINES
+
+    return sum(c[1] - padding for c in removed_changes)
 
 
 #####   vc specific   #####
