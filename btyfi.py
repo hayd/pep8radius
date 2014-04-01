@@ -1,11 +1,22 @@
 from __future__ import print_function
 import argparse
+import autopep8
 import re
 from subprocess import check_output, STDOUT, CalledProcessError
+import sys
 from sys import exit
+
+try:
+    from StringIO import StringIO
+except ImportError:
+    from io import StringIO
 
 
 __version__ = version = '0.5a'
+
+
+DEFAULT_IGNORE = 'E24'
+DEFAULT_INDENT_SIZE = 4
 
 
 def main():
@@ -20,13 +31,42 @@ def main():
                         nargs='?')
 
     group = parser.add_mutually_exclusive_group(required=False)
-    group.add_argument('-v', '--verbose',
-                       help='print which files/lines are being pep8d',
-                       action='store_true')
+
     group.add_argument('--version',
                        help='print version number and exit',
                        action='store_true')
-
+    group.add_argument('-v', '--verbose',
+                       help='print which files/lines are being pep8d',
+                       action='store_true')
+    parser.add_argument('-d', '--diff', action='store_true', dest='diff',
+                        help='print the diff for the fixed source')
+    parser.add_argument('-p', '--pep8-passes', metavar='n',
+                        default=-1, type=int,
+                        help='maximum number of additional pep8 passes '
+                        '(default: infinite)')
+    parser.add_argument('-a', '--aggressive', action='count', default=0,
+                        help='enable non-whitespace changes; '
+                        'multiple -a result in more aggressive changes')
+    parser.add_argument('--experimental', action='store_true',
+                        help='enable experimental fixes')
+    parser.add_argument('--exclude', metavar='globs',
+                        help='exclude file/directory names that match these '
+                        'comma-separated globs')
+    parser.add_argument('--list-fixes', action='store_true',
+                        help='list codes for fixes; '
+                        'used by --ignore and --select')
+    parser.add_argument('--ignore', metavar='errors', default='',
+                        help='do not fix these errors/warnings '
+                        '(default: {0})'.format(DEFAULT_IGNORE))
+    parser.add_argument('--select', metavar='errors', default='',
+                        help='fix only these errors/warnings (e.g. E4,W)')
+    parser.add_argument('--max-line-length', metavar='n', default=79, type=int,
+                        help='set maximum allowed line length '
+                        '(default: %(default)s)')
+    parser.add_argument('--indent-size', default=DEFAULT_INDENT_SIZE,
+                        type=int, metavar='n',
+                        help='number of spaces per indent level '
+                             '(default %(default)s)')
     args = parser.parse_args()
 
     if args.version:
@@ -34,7 +74,7 @@ def main():
         exit(0)
 
     try:
-        r = Radius.new(rev=args.rev, verbose=args.verbose)
+        r = Radius.new(rev=args.rev, options=args)
     except NotImplementedError as e:
         print(e.message)
         exit(1)
@@ -49,13 +89,20 @@ def main():
 
 class Radius:
 
-    def __init__(self, rev=None, verbose=False):
-        self.verbose = verbose
+    def __init__(self, rev=None, options=None):
         self.rev = rev if rev is not None else self.current_branch()
+        self.options = options if options else autopep8.parse_args([''])
+        self.verbose = self.options.verbose
+        self.diff = self.options.diff
+
+        self.options.verbose = False
+        self.options.in_place = True
+        self.options.diff = True
+        # self.options.in_place = False # turn off when testing
         self.filenames_diff = self.get_filenames_diff()
 
     @staticmethod
-    def new(rev=None, verbose=False, vc=None):
+    def new(rev=None, options=None, vc=None):
         """
         Create subclass instance of Radius with correct version control
 
@@ -70,20 +117,26 @@ class Radius:
         except KeyError:
             return NotImplementedError("Unknown version control system.")
 
-        return r(rev=rev, verbose=verbose)
+        return r(rev=rev, options=options)
 
     def pep8radius(self):
         "Better than you found it. autopep8 the diff lines in each py file"
         n = len(self.filenames_diff)
 
-        self.p('Applying autopep8 to touched lines in %s file(s)'
+        self.p('Applying autopep8 to touched lines in %s file(s).'
                % len(self.filenames_diff))
 
         for i, f in enumerate(self.filenames_diff, start=1):
-            self.p('%s/%s: Applying pep8radius to %s on lines:' % (i, n, f))
-            self.pep8radius_file(f)
+            self.p('%s/%s: %s: ' % (i, n, f), end='')
+            sys.stdout.flush()
+            pep8_diff = self.pep8radius_file(f)
+            # TODO parse this diff to extract number of changes
+            # possibly we want to print a restricted version of diff
+            if self.diff and pep8_diff:
+                print('\n', pep8_diff)
+            # print number of lines fixed
 
-        self.p('Pep8radius complete, better than you found it!')
+        self.p('\nfixed lines in %s files.' % (i))
 
     def pep8radius_file(self, f):
         "Apply autopep8 to the diff lines of file f"
@@ -91,18 +144,27 @@ class Radius:
         cmd = self.file_diff_cmd(f)
         diff = check_output(cmd).decode('utf-8')
 
-        self.p('     ', end='')
+        pep8_diff = []
         for start, end in self.line_numbers_from_file_diff(diff):
-            self.autopep8_line_range(f, start, end)
+            out = StringIO()
+            self.autopep8_line_range(f, start, end, out)
+            # TODO atm this isn't ouputting anything!
+            pep8_diff.append(out.getvalue())
         self.p('')
 
-    def autopep8_line_range(self, f, start, end):
-        "Apply autopep8 between start and end of file f"
-        self.p('%s-%s' % (end, start), end=', ')
-        # TODO flush output (on python 3)
+        # reversed since pep8radius applied backwards
+        pep8_diff = reversed([diff for diff in pep8_diff if diff])
 
-        pep_log = check_output(['autopep8', '--in-place', '--range',
-                                start, end, f])
+        # TODO possibly remove first two lines of not first diffs
+        return '\n'.join(pep8_diff)
+
+    def autopep8_line_range(self, f, start, end, output=None):
+        "Apply autopep8 between start and end of file f"
+        self.p('.', end='')
+        sys.stdout.flush()
+
+        self.options.line_range = [start, end]
+        autopep8.fix_file(f, self.options, output)
 
     def get_filenames_diff(self):
         "Get the py files which have been changed since rev"
@@ -115,7 +177,6 @@ class Radius:
         diff_files_u = diff_files_b.decode('utf-8')
         diff_files = self.parse_diff_filenames(diff_files_u)
 
-        # TODO ensure filter of py is done in filenames_diff_cmd
         return [f for f in diff_files if f.endswith('.py')]
 
     def line_numbers_from_file_diff(self, diff):
