@@ -11,7 +11,7 @@ NAME = 'Better-Than-You-Found-It'  # 'pep8radius'
 
 def version():
     """Return version string."""
-    with open('btyfi.py') as input_file:
+    with open('btyfi.py' ) as input_file:
         for line in input_file:
             if line.startswith('__version__'):
                 return parse(line).body[0].value.s

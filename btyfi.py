@@ -1,6 +1,7 @@
 from __future__ import print_function
 import argparse
 import autopep8
+from itertools import takewhile
 import re
 from subprocess import check_output, STDOUT, CalledProcessError
 import sys
@@ -23,7 +24,7 @@ def main():
     description = ("Tidy up (autopep8) only the lines in the files touched "
                    "in the git branch/commit.")
     epilog = ("Run before you do a commit to tidy, "
-              "or against a branch before merging.")
+              "or against a previous commit or branch before merging.")
     parser = argparse.ArgumentParser(description=description,
                                      epilog=epilog)
     parser.add_argument('rev',
@@ -41,6 +42,8 @@ def main():
                         'multiple -v result in more verbose messages')
     parser.add_argument('-d', '--diff', action='store_true', dest='diff',
                         help='print the diff for the fixed source')
+    parser.add_argument('--dry-run', action='store_true',
+                        help="do not make the changes in place, and print diff")
     parser.add_argument('-p', '--pep8-passes', metavar='n',
                         default=-1, type=int,
                         help='maximum number of additional pep8 passes '
@@ -70,6 +73,28 @@ def main():
                              '(default %(default)s)')
     args = parser.parse_args()
 
+    # sanity check args (fro autopep8)
+    if args.max_line_length <= 0:
+        parser.error('--max-line-length must be greater than 0')
+
+    if args.select:
+        args.select = args.select.split(',')
+
+    if args.ignore:
+        args.ignore = args.ignore.split(',')
+    elif not args.select:
+        if args.aggressive:
+            # Enable everything by default if aggressive.
+            args.select = ['E', 'W']
+        else:
+            args.ignore = DEFAULT_IGNORE.split(',')
+
+    if args.exclude:
+        args.exclude = args.exclude.split(',')
+    else:
+        args.exclude = []
+
+    # main
     if args.version:
         print(version)
         exit(0)
@@ -94,17 +119,18 @@ class Radius:
         self.rev = rev if rev is not None else self.current_branch()
         self.options = options if options else autopep8.parse_args([''])
         self.verbose = self.options.verbose
-        self.diff = self.options.diff
+        self.dry_run = self.options.dry_run
+        self.diff = self.options.diff or self.options.dry_run
 
+        # TODO parse autopep8 options properly (ensure allowable)
         if not self.options.exclude:
             self.options.exclude = []
         if not self.options.ignore:
             self.options.ignore = DEFAULT_IGNORE.split(',')
 
-        self.options.verbose = self.options.verbose - 1
-        self.options.in_place = True
-        self.options.diff = True
-        self.options.in_place = False  # turn off when testing
+        self.options.verbose = max(0, self.options.verbose - 1)
+        self.options.in_place = False
+        self.options.diff = False
         self.filenames_diff = self.get_filenames_diff()
 
     @staticmethod
@@ -132,52 +158,57 @@ class Radius:
         self.p('Applying autopep8 to touched lines in %s file(s).'
                % len(self.filenames_diff))
 
-        i = total_lines_changed = 0
+        i = total_lines_changed =   0
         pep8_diffs = []
-        for i, f in enumerate(self.filenames_diff, start=1):
-            self.p('%s/%s: %s: ' % (i, n, f), end='')
+        for i, file_name in enumerate(self.filenames_diff, start=1):
+            self.p('%s/%s: %s: ' % (i, n, file_name), end='')
+            self.p('', min_=2)
 
-            pep8_diff = self.pep8radius_file(f, last_char=' ')
-            lines_changed = udiff_lines_changes(pep8_diff)
+            p_diff = self.pep8radius_file(file_name)
+            lines_changed = udiff_lines_changes(p_diff) if p_diff else 0
             total_lines_changed += lines_changed
-            self.p('fixed %s lines.' % lines_changed)
+            self.p('fixed %s lines.' % lines_changed, max_=1)
 
-            if pep8_diff:
-                pep8_diffs.append(pep8_diff)
+            if p_diff and self.diff:
+                pep8_diffs.append(p_diff)
 
-        self.p('fixed %s lines in %s files.' % (total_lines_changed, i))
+        self.p('pep8radius fixed %s lines in %s files.'
+               % (total_lines_changed, i))
 
-        if self.diff and pep8_diffs:
-            for pep8_diff in pep8_diffs:
+        if self.diff:
+            for diff in pep8_diffs:
                 # possibly we want to print a restricted version of diff
-                print(pep8_diff)
+                print(diff)
 
-    def pep8radius_file(self, f, last_char='\n'):
+    def pep8radius_file(self, file_name):
         "Apply autopep8 to the diff lines of file f"
         # Presumably if was going to raise would have at get_filenames_diff
-        cmd = self.file_diff_cmd(f)
+        cmd = self.file_diff_cmd(file_name)
         diff = check_output(cmd).decode('utf-8')
 
-        pep8_diff = []
+        with open(file_name, 'r') as f:
+            original = f.read()
+
+        partial = original
         for start, end in self.line_numbers_from_file_diff(diff):
-            pep8_diff.append(self.autopep8_line_range(f, start, end))
-            if self.verbose == 1:
-                self.p('.', end='')
-        self.p('', end=last_char)
+            partial = self.autopep8_line_range(partial, start, end)
+            # import pdb; pdb.set_trace()
+            self.p('.', end='', max_=1)
+        self.p('', max_=1)
+        fixed = partial
 
-        # reversed since pep8radius applies backwards
-        pep8_diff = [diff for diff in pep8_diff if diff][::-1]
-
-        for i, diff in enumerate(pep8_diff[1:], start=1):
-            pep8_diff[i] = ''.join(diff.splitlines(True)[2:])
-
-        # TODO possibly remove first two lines of not first diffs
-        return '\n'.join(pep8_diff)
+        if not self.options.dry_run:
+            with open(file_name, 'r') as f:
+                f.write(fixed)
+        #import pdb; pdb.set_trace()
+        return autopep8.get_diff_text(original.splitlines(True),
+                                      fixed.splitlines(True),
+                                      file_name)
 
     def autopep8_line_range(self, f, start, end):
         "Apply autopep8 between start and end of file f"
         self.options.line_range = [start, end]
-        return autopep8.fix_file(f, self.options)
+        return autopep8.fix_code(f,   self.options)
 
     def get_filenames_diff(self):
         "Get the py files which have been changed since rev"
@@ -196,66 +227,44 @@ class Radius:
         "Potentially this is vc specific (if not using udiff)"
         return line_numbers_from_file_udiff(diff)
 
-    def p(self, something_to_print, end=None):
-        if self.verbose:
-            print(something_to_print, end=end)
+    def p(self, something_to_print, end=None, min_=1, max_=99):
+        if min_ <= self.verbose <= max_:
+            print(something_to_print, end= end)
             sys.stdout.flush()
 
 
 #####   udiff parsing   #####
 #############################
 
-def line_numbers_from_file_udiff(udiff):
+def line_numbers_from_file_udiff(udiff  ):
     """
     Parse a udiff, return iterator of tuples of (start, end) line numbers.
 
     Note: returned in descending order (as autopep8 can +- lines)
 
     """
-    lines_with_line_numbers = [line for line in udiff.splitlines()
-                               if line.startswith('@@')][::-1]
-    # Note: we do this backwards, as autopep8 can add/remove lines
+    chunks = re.split('\n@@[^\n]+\n', udiff)[1:]
 
-    for u in lines_with_line_numbers:
-        start, end = map(int, udiff_line_start_and_end(u))
-        yield (start, end)
+    line_numbers = re.findall('(?<=[+])\d+(?=,\d+)', udiff)
+    line_numbers = map(int, line_numbers)
 
-
-def udiff_line_start_and_end(u):
-    """
-    Extract start line and end from udiff line
-
-    Example
-    -------
-    '@@ -638,9 +638,17 @@ class GroupBy(PandasObject):'
-    Returns the start line 638 and end line (638 + 17) (the lines added).
-
-    """
-    # I *think* we only care about the + lines?
-    line_numbers = re.findall('(?<=[+])\d+,\d+', u)
-    line_numbers = line_numbers[0].split(',')
-    line_numbers = list(map(int, line_numbers))
-
-    PADDING_LINES = 3  # TODO perhaps this is configuarable?
-
-    return (line_numbers[0] + PADDING_LINES,
-            sum(line_numbers) - PADDING_LINES)
+    # Note: this is reversed as can modify number of lines
+    for c, start in reversed(zip(chunks, line_numbers)):
+        empty = [line.startswith(' ') for line in c.splitlines()]
+        pre_padding = sum(1 for _ in takewhile(lambda b: b, empty))
+        new_lines = sum(line.startswith('+') for line in c)
+        yield (start + pre_padding, start + pre_padding + new_lines)
 
 
 def udiff_lines_changes(u):
     """
-    Count line changes in udiff
-
-    'fixed/btyfi.py\n@@ -157,7 +157,11 @@' will extract 7 - 2 * PADDING_LINES
+    Count lines removed in udiff
 
     """
-    removed_changes = re.findall('\n@@\s+\-(\d+,\d+)', u)
-    removed_changes = [map(int, c.split(',')) for c in removed_changes]
-
-    PADDING_LINES = 3  # TODO perhaps this is configuarable?
-    padding = 2 * PADDING_LINES
-
-    return sum(c[1] - padding for c in removed_changes)
+    # TODO just count - lines
+    #import pdb; pdb.set_trace()
+    removed_changes = re.findall('\n\-', u)
+    return sum(len(removed_changes) for c in removed_changes)
 
 
 #####   vc specific   #####
@@ -263,7 +272,7 @@ def udiff_lines_changes(u):
 
 class RadiusGit(Radius):
 
-    def current_branch(self):
+    def current_branch(self  ):
         output = check_output(["git", "rev-parse", "--abbrev-ref", "HEAD"])
         return output.strip().decode('utf-8')
 
@@ -338,5 +347,5 @@ def which_version_control():
                               "Ensure you're in the project directory.")
 
 
-if __name__ == "__main__":
+if __name__ ==    "__main__":
     main()
