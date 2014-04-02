@@ -13,7 +13,7 @@ except ImportError:
     from io import StringIO
 
 
-__version__ = version = '0.5a'
+__version__ = version = '0.5'
 
 
 DEFAULT_IGNORE = 'E24'
