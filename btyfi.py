@@ -43,7 +43,7 @@ def main():
     parser.add_argument('-d', '--diff', action='store_true', dest='diff',
                         help='print the diff for the fixed source')
     parser.add_argument('--dry-run', action='store_true',
-                        help="do not make the changes in place, and print diff")
+                        help="do not make the changes in place and print diff")
     parser.add_argument('-p', '--pep8-passes', metavar='n',
                         default=-1, type=int,
                         help='maximum number of additional pep8 passes '
@@ -158,7 +158,7 @@ class Radius:
         self.p('Applying autopep8 to touched lines in %s file(s).'
                % len(self.filenames_diff))
 
-        i = total_lines_changed =   0
+        i = total_lines_changed = 0
         pep8_diffs = []
         for i, file_name in enumerate(self.filenames_diff, start=1):
             self.p('%s/%s: %s: ' % (i, n, file_name), end='')
@@ -172,12 +172,15 @@ class Radius:
             if p_diff and self.diff:
                 pep8_diffs.append(p_diff)
 
-        self.p('pep8radius fixed %s lines in %s files.'
-               % (total_lines_changed, i))
+        if self.dry_run:
+            self.p('pep8radius would fix %s lines in %s files.'
+                   % (total_lines_changed, i))
+        else:
+            self.p('pep8radius fixed %s lines in %s files.'
+                   % (total_lines_changed, i))
 
         if self.diff:
             for diff in pep8_diffs:
-                # possibly we want to print a restricted version of diff
                 print(diff)
 
     def pep8radius_file(self, file_name):
@@ -198,9 +201,8 @@ class Radius:
         fixed = partial
 
         if not self.options.dry_run:
-            with open(file_name, 'r') as f:
+            with open(file_name, 'w') as f:
                 f.write(fixed)
-        #import pdb; pdb.set_trace()
         return autopep8.get_diff_text(original.splitlines(True),
                                       fixed.splitlines(True),
                                       file_name)
@@ -212,7 +214,6 @@ class Radius:
 
     def get_filenames_diff(self):
         "Get the py files which have been changed since rev"
-
         cmd = self.filenames_diff_cmd()
 
         # Note: This may raise a CalledProcessError
@@ -229,14 +230,14 @@ class Radius:
 
     def p(self, something_to_print, end=None, min_=1, max_=99):
         if min_ <= self.verbose <= max_:
-            print(something_to_print, end= end)
+            print(something_to_print, end=end)
             sys.stdout.flush()
 
 
-#####   udiff parsing   #####
-#############################
+# #####   udiff parsing   #####
+# #############################
 
-def line_numbers_from_file_udiff(udiff  ):
+def line_numbers_from_file_udiff(udiff):
     """
     Parse a udiff, return iterator of tuples of (start, end) line numbers.
 
@@ -261,18 +262,16 @@ def udiff_lines_changes(u):
     Count lines removed in udiff
 
     """
-    # TODO just count - lines
-    #import pdb; pdb.set_trace()
     removed_changes = re.findall('\n\-', u)
     return sum(len(removed_changes) for c in removed_changes)
 
 
-#####   vc specific   #####
-###########################
+# #####   vc specific   #####
+# ###########################
 
 class RadiusGit(Radius):
 
-    def current_branch(self  ):
+    def current_branch(self):
         output = check_output(["git", "rev-parse", "--abbrev-ref", "HEAD"])
         return output.strip().decode('utf-8')
 
@@ -347,5 +346,5 @@ def which_version_control():
                               "Ensure you're in the project directory.")
 
 
-if __name__ ==    "__main__":
+if __name__ == "__main__":
     main()
