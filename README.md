@@ -1,12 +1,13 @@
 pep8radius aka Better-Than-You-Found-It (btyfi) 
 -----------------------------------------------
 
-Clean (using autopep8) only the parts of the files which you have touched in the last commit, or against another commit/branch.
+[PEP8](http://legacy.python.org/dev/peps/pep-0008/) clean only the parts of the files which you have touched since the last commit, previous commit or branch.
 
-Pep8 "storms" (fixing pep8 infractions across the entire project) often cause merge conflicts and break git blame, but you can still "leave it better than you found it" by ensuring that the parts of the project which you touch satisfy pep8.
-
+[![MIT Licensed](http://img.shields.io/badge/license-MIT-brightgreen.png)](http://choosealicense.com/licenses/mit/)
 [![Current PyPi Version](https://pypip.in/v/pep8radius/badge.png)](https://pypi.python.org/pypi/pep8radius)
 [![PyPi Monthly Downloads](https://pypip.in/d/pep8radius/badge.png)](https://pypi.python.org/pypi/pep8radius)
+
+Fixing the entire project of PEP8 infractions ("PEP8 storms") can lead to merge conflicts, add noise to merges / pull requests and break (git) blame. pep8radius solves this problem by fixing only those PEP8 infractions incontained on the lines of the project which you've been working, leaving these sections "better than you found it" whilst keeping your commits focused on the areas of the codebase you were actually working on.
 
 Installation
 ------------
@@ -16,11 +17,11 @@ From pip:
 
 Requirements
 ------------
-requires autopep8, which in turn requires pep8.
+pep8radius requires [autopep8](https://pypi.python.org/pypi/autopep8), which in turn requires [pep8](https://pypi.python.org/pypi/pep8). It also requires a version control system installed on your system...
 
-Currently Supports
-------------------
-git and hg (you need your version control to be installed on your system).
+VCS Support
+-----------
+[Git](http://git-scm.com/) and [Mecurial (hg)](http://mercurial.selenic.com/). Please request support for other version control systems on [github](https://github.com/hayd/btyfi).
 
 Usage
 -----
@@ -35,7 +36,9 @@ Against a branch you can use the same syntax as with git diff:
     pep8radius master   # branch name
     pep8radius c12166f  # commit hash
 
-*Note: can also use btyfi alias for pep8radius.*
+    pep8radius master --dry-run  # these works the other options too
+
+*Note: can also use `btyfi` alias for `pep8radius`.*
 
 Options
 -------
@@ -74,4 +77,4 @@ Options
       --max-line-length n   set maximum allowed line length (default: 79)
       --indent-size n       number of spaces per indent level (default 4)
 
-For more details about these options see autopep8.
+*For more information about these options see [autopep8](https://pypi.python.org/pypi/autopep8).*
