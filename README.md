@@ -5,6 +5,9 @@ Clean (using autopep8) only the parts of the files which you have touched in the
 
 Pep8 "storms" (fixing pep8 infractions across the entire project) often cause merge conflicts and break git blame, but you can still "leave it better than you found it" by ensuring that the parts of the project which you touch satisfy pep8.
 
+[![Current PyPi Version](https://pypip.in/v/pep8radius/badge.png)](https://pypi.python.org/pypi/pep8radius)
+[![PyPi Monthly Downloads](https://pypip.in/d/pep8radius/badge.png)](https://pypi.python.org/pypi/pep8radius)
+
 Installation
 ------------
 From pip:

@@ -73,7 +73,7 @@ def main():
                              '(default %(default)s)')
     args = parser.parse_args()
 
-    # sanity check args (fro autopep8)
+    # sanity check args (from autopep8)
     if args.max_line_length <= 0:
         parser.error('--max-line-length must be greater than 0')
 
