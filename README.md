@@ -3,9 +3,9 @@ pep8radius aka Better-Than-You-Found-It (btyfi)
 
 [PEP8](http://legacy.python.org/dev/peps/pep-0008/) clean only the parts of the files which you have touched since the last commit, previous commit or branch.
 
-[![MIT Licensed](http://img.shields.io/badge/license-MIT-brightgreen.png)](http://choosealicense.com/licenses/mit/)
-[![Current PyPi Version](https://pypip.in/v/pep8radius/badge.png)](https://pypi.python.org/pypi/pep8radius)
-[![PyPi Monthly Downloads](https://pypip.in/d/pep8radius/badge.png)](https://pypi.python.org/pypi/pep8radius)
+[![Current PyPi Version](http://img.shields.io/pypi/v/pep8radius.svg)](https://pypi.python.org/pypi/pep8radius)
+[![MIT licensed](http://img.shields.io/badge/license-MIT-brightgreen.svg)](http://choosealicense.com/licenses/mit/)
+[![PyPi Monthly Downloads](http://img.shields.io/pypi/dm/pep8radius.svg)](https://pypi.python.org/pypi/pep8radius)
 
 Fixing the entire project of PEP8 infractions ("PEP8 storms") can lead to merge conflicts, add noise to merges / pull requests and break (git) blame. pep8radius solves this problem by fixing only those PEP8 infractions incontained on the lines of the project which you've been working, leaving these sections "better than you found it" whilst keeping your commits focused on the areas of the codebase you were actually working on.
 
@@ -48,9 +48,6 @@ Options
                     [--ignore errors] [--select errors] [--max-line-length n]
                     [--indent-size n]
                     [rev]
-
-    Tidy up (autopep8) only the lines in the files touched in the git
-    branch/commit.
 
     positional arguments:
       rev                   commit or name of branch to compare against

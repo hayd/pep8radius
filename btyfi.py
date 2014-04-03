@@ -21,10 +21,11 @@ DEFAULT_INDENT_SIZE = 4
 
 
 def main():
-    description = ("Tidy up (autopep8) only the lines in the files touched "
-                   "in the git branch/commit.")
-    epilog = ("Run before you do a commit to tidy, "
-              "or against a previous commit or branch before merging.")
+    description = ("PEP8 clean only the parts of the files which you have "
+                   "touched since the last commit, previous commit or " 
+                   "branch.")
+    epilog = ("Run before you commit, or against a previous commit or "
+              "branch before merging.")
     parser = argparse.ArgumentParser(description=description,
                                      epilog=epilog)
     parser.add_argument('rev',
