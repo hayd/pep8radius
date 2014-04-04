@@ -17,11 +17,13 @@ def version():
                 return parse(line).body[0].value.s
 
 def readme():
-    try:
-       import pypandoc
-       return pypandoc.convert('README.md', 'rst')
-    except (IOError, ImportError):
-       return open('README.md').read()
+    with open('README.md') as f:
+        readme = ''.join(f.readlines()[4:]).decode('utf-8')
+        try:
+            import pypandoc
+            return pypandoc.convert(readme, 'rst', format='md')
+        except (IOError, ImportError):
+            return readme
 
 INSTALL_REQUIRES = (
     ['autopep8'] +

@@ -3,6 +3,7 @@ import argparse
 import autopep8
 from itertools import takewhile
 import re
+import signal
 from subprocess import check_output, STDOUT, CalledProcessError
 import sys
 from sys import exit
@@ -21,6 +22,46 @@ DEFAULT_INDENT_SIZE = 4
 
 
 def main():
+    """Tool main."""
+    try:
+        # Exit on broken pipe.
+        signal.signal(signal.SIGPIPE, signal.SIG_DFL)
+    except AttributeError:  # pragma: no cover
+        # SIGPIPE is not available on Windows.
+        pass
+
+    try:
+        args = parse_args(sys.argv[1:])
+
+        # main
+        if args.version:
+            print(version)
+            exit(0)
+
+        if args.list_fixes:
+            for code, description in sorted(autopep8.supported_fixes()):
+                print('{code} - {description}'.format(
+                    code=code, description=description))
+            exit(0)
+
+        try:
+            r = Radius.new(rev=args.rev, options=args)
+        except NotImplementedError as e:
+            print(e.message)
+            exit(1)
+        except CalledProcessError as c:
+            # cut off usage of git diff and exit
+            output = c.output.splitlines()[0]
+            print(output)
+            exit(c.returncode)
+
+        r.pep8radius()
+
+    except KeyboardInterrupt:
+        return 1  # pragma: no cover
+
+
+def parse_args(arguments):
     description = ("PEP8 clean only the parts of the files which you have "
                    "touched since the last commit, previous commit or " 
                    "branch.")
@@ -72,7 +113,8 @@ def main():
                         type=int, metavar='n',
                         help='number of spaces per indent level '
                              '(default %(default)s)')
-    args = parser.parse_args()
+
+    args = parser.parse_args(arguments)
 
     # sanity check args (from autopep8)
     if args.max_line_length <= 0:
@@ -95,30 +137,13 @@ def main():
     else:
         args.exclude = []
 
-    # main
-    if args.version:
-        print(version)
-        exit(0)
-
-    try:
-        r = Radius.new(rev=args.rev, options=args)
-    except NotImplementedError as e:
-        print(e.message)
-        exit(1)
-    except CalledProcessError as c:
-        # cut off usage of git diff and exit
-        output = c.output.splitlines()[0]
-        print(output)
-        exit(c.returncode)
-
-    r.pep8radius()
-
+    return args
 
 class Radius:
 
     def __init__(self, rev=None, options=None):
         self.rev = rev if rev is not None else self.current_branch()
-        self.options = options if options else autopep8.parse_args([''])
+        self.options = options if options else parse_args([''])
         self.verbose = self.options.verbose
         self.dry_run = self.options.dry_run
         self.diff = self.options.diff or self.options.dry_run
