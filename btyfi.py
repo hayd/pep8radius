@@ -270,17 +270,23 @@ def line_numbers_from_file_udiff(udiff):
     Note: returned in descending order (as autopep8 can +- lines)
 
     """
-    chunks = re.split('\n@@[^\n]+\n', udiff)[1:]
+    chunks = re.split('\n@@[^\n]+\n', udiff)[:0:-1]
 
     line_numbers = re.findall('(?<=[+])\d+(?=,\d+)', udiff)
-    line_numbers = map(int, line_numbers)
+    line_numbers = map(int, line_numbers)[::-1]
 
-    # Note: this is reversed as can modify number of lines
-    for c, start in reversed(zip(chunks, line_numbers)):
+    # Note: these were reversed as can modify number of lines
+    for c, start in zip(chunks, line_numbers):
         empty = [line.startswith(' ') for line in c.splitlines()]
         pre_padding = sum(1 for _ in takewhile(lambda b: b, empty))
         new_lines = sum(line.startswith('+') for line in c)
-        yield (start + pre_padding, start + pre_padding + new_lines)
+        post_padding = sum(1 for _ in takewhile(lambda b: b, empty[::-1]))
+
+        sub_lines = sum(line.startswith('-') for line in c)
+        lines_in_range = len(c.splitlines()) - sub_lines
+
+        yield (start + pre_padding,
+               start + pre_padding + sub_lines - 1)
 
 
 def udiff_lines_changes(u):
