@@ -292,7 +292,7 @@ def line_numbers_from_file_udiff(udiff):
     chunks = re.split('\n@@[^\n]+\n', udiff)[:0:-1]
 
     line_numbers = re.findall('(?<=[+])\d+(?=,\d+)', udiff)
-    line_numbers = map(int, line_numbers)[::-1]
+    line_numbers = list(map(int, line_numbers))[::-1]
 
     # Note: these were reversed as can modify number of lines
     for c, start in zip(chunks, line_numbers):
