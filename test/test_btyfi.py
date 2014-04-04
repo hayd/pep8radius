@@ -53,11 +53,11 @@ class TestRadius(TestCase):
         r = Radius.new(vc=self.vc)
         r.pep8radius()
         # compare output to desired
-        self.assert_(filecmp.cmp(bad, better), self.get_file_diff(bad, better))
+        self.assertTrue(filecmp.cmp(bad, better), self.get_file_diff(bad, better))
 
         # Run again
         r.pep8radius()
-        self.assert_(filecmp.cmp(bad, better), self.get_file_diff(bad, better))
+        self.assertTrue(filecmp.cmp(bad, better), self.get_file_diff(bad, better))
 
     @staticmethod
     def get_file_diff(a, b):

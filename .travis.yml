@@ -19,7 +19,7 @@ install:
     - python setup.py --quiet build --build-base=".build-$TRAVIS_PYTHON_VERSION" install
     - git config --global user.email "you@example.com"
     - git config --global user.name "Your Name"
-    - echo -e "[ui]\nusername = Your Name <your@email.com>" ~/.hgrc
+    - echo -e "[ui]\nusername = Your Name <your@email.com>" > ~/.hgrc
 
 script:
     - cd test
