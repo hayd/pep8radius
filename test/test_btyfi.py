@@ -23,8 +23,6 @@ def _in_test_directory():
 
 @skipIf(not _in_test_directory, "Not in test directory.")
 class TestRadius(TestCase):
-    _files = ['bad_original.py']
-
     def __init__(self, *args, **kwargs):
         self.using_vc = self.init_vc()
         super(TestRadius, self).__init__(*args, **kwargs)
@@ -35,14 +33,6 @@ class TestRadius(TestCase):
     def setUp(self):
         if not self.using_vc:
             raise SkipTest("%s not available" % self.vc)
-
-        for f in self._files:
-            copyfile(f, 'temp_' + f)
-
-    def tearDown(self):
-        for f in self._files:
-            copyfile('temp_' + f, f)
-            remove('temp_' + f)
 
     def check(self, original, modified, expected, commit='check'):
         """Modify original to modified, and check that pep8radius
