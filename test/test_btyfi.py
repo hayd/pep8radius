@@ -54,15 +54,18 @@ class TestRadius(TestCase):
         with open(temp_file, 'r') as f:
             result = f.read()
         self.assertTrue(result == expected,
-                        get_diff_text(result, expected, commit))
+                        get_diff_text(result.splitlines(True),
+                                      expected.splitlines(True),
+                                      commit))
 
         # Run pep8radius again
         r.pep8radius()
         with open(temp_file, 'r') as f:
             result = f.read()
         self.assertTrue(result == expected,
-                        get_diff_text(result, expected, commit))
-
+                        get_diff_text(result.splitlines(True),
+                                      expected.splitlines(True),
+                                      commit))
 
 class MixinTests:
 
