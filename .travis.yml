@@ -20,5 +20,4 @@ install:
 
 script:
     - cd test
-    - python create_repos.py
     - python test_btyfi.py

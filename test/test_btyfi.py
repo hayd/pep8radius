@@ -2,23 +2,36 @@ from __future__ import absolute_import
 from autopep8 import get_diff_text
 from btyfi import Radius, RadiusGit, RadiusHg
 import filecmp
+import os
 from os import remove
-from shutil import copyfile
+from shutil import copyfile, rmtree
 from subprocess import check_output, CalledProcessError
 from sys import version_info
 
 if version_info < (2, 7):
-    from unittest2 import main, SkipTest, TestCase
+    from unittest2 import main, skipIf, SkipTest, TestCase
 else:
-    from unittest import main, SkipTest, TestCase
+    from unittest import main, skipIf, SkipTest, TestCase
 
 
+def _in_test_directory():
+    "If not in this directory, version control won't work correctly."
+    # TODO just move to dir then move back?
+    head, test = os.path.split(os.getcwd())
+    _, pep8radius = os.path.split(head)
+    return test == 'test' and pep8radius == 'pep8radius'
+
+@skipIf(not _in_test_directory, "Not in test directory.")
 class TestRadius(TestCase):
     _files = ['bad_original.py']
 
     def __init__(self, *args, **kwargs):
+        self.using_vc = self.init_vc()
         super(TestRadius, self).__init__(*args, **kwargs)
-        self.using_vc = self.using_vc_or_init_vc()
+
+    def init_vc(self):
+        self.delete_and_create_repo()
+        return self.successfully_create_and_commit_files(self._files)
 
     def setUp(self):
         if not self.using_vc:
@@ -65,39 +78,43 @@ class MixinTests:
 class TestRadiusGit(TestRadius, MixinTests):
     vc = 'git'
 
-    def using_vc_or_init_vc(self):
+    # Critical that we're in correct directory.
+
+    def delete_and_create_repo(self):
+        try:
+            rmtree(os.path.join(os.getcwd(), '.git'))
+        except OSError:
+            pass
+
+    def successfully_create_and_commit_files(self, file_names):
         try:
             check_output(["git", "init"])
+            check_output(["git", "add"] + file_names)
+            check_output(["git", "commit", "-m", "initial_commit"])
             return True
-        except OSError:
+        except (OSError, CalledProcessError):
             return False
-        except CalledProcessError:
-            pass  # possible can return False here
-        try:
-            check_output(["git", "log"])
-            return True
-        except CalledProcessError:
-            pass
-        return False
 
 
 class TestRadiusHg(TestRadius, MixinTests):
     vc = 'hg'
 
-    def using_vc_or_init_vc(self):
+    # Critical that we're in correct directory.
+
+    def delete_and_create_repo(self):
+        try:
+            rmtree(os.path.join(os.getcwd(), '.hg'))
+        except OSError:
+            pass
+
+    def successfully_create_and_commit_files(self, file_names):
         try:
             check_output(["hg", "init"])
+            check_output(["hg", "add"] + file_names)
+            check_output(["hg", "commit", "-m", "initial_commit"])
             return True
-        except OSError:
+        except (OSError, CalledProcessError):
             return False
-        except CalledProcessError:
-            pass
-        try:
-            check_output(["hg", "log"])
-            return True
-        except CalledProcessError:
-            pass
-        return False
 
 if __name__ == '__main__':
     main()
