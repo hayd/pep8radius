@@ -30,8 +30,7 @@ class TestRadius(TestCase):
         super(TestRadius, self).__init__(*args, **kwargs)
 
     def init_vc(self):
-        self.delete_and_create_repo()
-        return self.successfully_create_and_commit_files(self._files)
+        return self.delete_and_create_repo()
 
     def setUp(self):
         if not self.using_vc:
@@ -45,34 +44,43 @@ class TestRadius(TestCase):
             copyfile('temp_' + f, f)
             remove('temp_' + f)
 
-    def check(self, bad, changed, better):
-        "Modify bad to changed, and then btyfi and check it becomes better"
-        copyfile(changed, bad)
+    def check(self, original, modified, expected, commit='check'):
+        """Modify original to modified, and check that pep8radius
+        turns this into expected."""
+        temp_file = 'temp.py'
 
-        # run btyfi
+        with open(temp_file, 'w') as f:
+            f.write(original)
+
+        committed = self.successfully_commit_files([temp_file])
+
+        with open(temp_file, 'w') as f:
+            f.write(modified)
+
+        # Run pep8radius
         r = Radius.new(vc=self.vc)
         r.pep8radius()
-        # compare output to desired
-        self.assertTrue(filecmp.cmp(bad, better), self.get_file_diff(bad, better))
 
-        # Run again
+        with open(temp_file, 'r') as f:
+            result = f.read()
+        self.assertTrue(result == expected,
+                        get_diff_text(result, expected, commit))
+
+        # Run pep8radius again
         r.pep8radius()
-        self.assertTrue(filecmp.cmp(bad, better), self.get_file_diff(bad, better))
+        with open(temp_file, 'r') as f:
+            result = f.read()
+        self.assertTrue(result == expected,
+                        get_diff_text(result, expected, commit))
 
-    @staticmethod
-    def get_file_diff(a, b):
-        with open(a) as aa:
-            with open(b) as bb:
-                return get_diff_text(aa.read().splitlines(True),
-                                     bb.read().splitlines(True),
-                                     'result')
 
 class MixinTests:
 
     def test_one_line(self):
-        self.check('bad_original.py',
-                   'changed_one_line.py',
-                   'better_one_line.py')
+        original = 'def poor_indenting():\n  a = 1\n  b = 2\n  return a + b\n\nfoo = 1; bar = 2; print(foo * bar)\na=1; b=2; c=3\nd=7\n\ndef f(x = 1, y = 2):\n    return x + y'
+        modified = 'def poor_indenting():\n  a = 1\n  b = 2\n  return a + b\n\nfoo = 1; bar = 2; print(foo * bar)\na=1; b=42; c=3\nd=7\n\ndef f(x = 1, y = 2):\n    return x + y'
+        expected = 'def poor_indenting():\n  a = 1\n  b = 2\n  return a + b\n\nfoo = 1; bar = 2; print(foo * bar)\na = 1\nb = 42\nc = 3\nd=7\n\ndef f(x = 1, y = 2):\n    return x + y\n'
+        self.check(original, modified, expected, 'test_one_line')
 
 
 class TestRadiusGit(TestRadius, MixinTests):
@@ -85,12 +93,17 @@ class TestRadiusGit(TestRadius, MixinTests):
             rmtree(os.path.join(os.getcwd(), '.git'))
         except OSError:
             pass
-
-    def successfully_create_and_commit_files(self, file_names):
         try:
             check_output(["git", "init"])
+            return True
+        except (OSError, CalledProcessError):
+            return False
+
+    def successfully_commit_files(self, file_names,
+                                        commit="initial_commit"):
+        try:
             check_output(["git", "add"] + file_names)
-            check_output(["git", "commit", "-m", "initial_commit"])
+            check_output(["git", "commit", "-m", commit])
             return True
         except (OSError, CalledProcessError):
             return False
@@ -106,12 +119,17 @@ class TestRadiusHg(TestRadius, MixinTests):
             rmtree(os.path.join(os.getcwd(), '.hg'))
         except OSError:
             pass
-
-    def successfully_create_and_commit_files(self, file_names):
         try:
             check_output(["hg", "init"])
+            return True
+        except (OSError, CalledProcessError):
+            return False
+
+    def successfully_commit_files(self, file_names,
+                                  commit="initial_commit"):
+        try:
             check_output(["hg", "add"] + file_names)
-            check_output(["hg", "commit", "-m", "initial_commit"])
+            check_output(["hg", "commit", "-m", commit])
             return True
         except (OSError, CalledProcessError):
             return False
