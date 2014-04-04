@@ -39,7 +39,7 @@ Against a branch you can use the same syntax as with git diff:
 $ pep8radius master   # branch name
 $ pep8radius c12166f  # commit hash
 
-$ pep8radius master --dry-run  # these works the other options too
+$ pep8radius master --dry-run  # these work with other options too
 ```
 
 *Note: can also use `btyfi` alias for `pep8radius`.*

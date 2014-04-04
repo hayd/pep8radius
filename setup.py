@@ -18,12 +18,11 @@ def version():
 
 def readme():
     with open('README.md') as f:
-        readme = ''.join(f.readlines()[4:]).decode('utf-8')
         try:
             import pypandoc
-            return pypandoc.convert(readme, 'rst', format='md')
+            return pypandoc.convert(f, 'rst', format='md')
         except (IOError, ImportError):
-            return readme
+            return f.read()
 
 INSTALL_REQUIRES = (
     ['autopep8'] +

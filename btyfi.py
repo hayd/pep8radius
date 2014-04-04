@@ -4,7 +4,8 @@ import autopep8
 from itertools import takewhile
 import re
 import signal
-from subprocess import check_output, STDOUT, CalledProcessError
+import subprocess
+from subprocess import STDOUT, CalledProcessError
 import sys
 from sys import exit
 
@@ -12,6 +13,24 @@ try:
     from StringIO import StringIO
 except ImportError:
     from io import StringIO
+
+# python 2.6 doesn't include check_output
+# http://hg.python.org/cpython/file/d37f963394aa/Lib/subprocess.py#l544
+if "check_output" not in dir(subprocess): # duck punch it in!
+    def f(*popenargs, **kwargs):
+        if 'stdout' in kwargs:
+            raise ValueError('stdout argument not allowed, it will be overridden.')
+        process = subprocess.Popen(stdout=subprocess.PIPE, *popenargs, **kwargs)
+        output, unused_err = process.communicate()
+        retcode = process.poll()
+        if retcode:
+            cmd = kwargs.get("args")
+            if cmd is None:
+                cmd = popenargs[0]
+            raise subprocess.CalledProcessError(retcode, cmd)
+        return output
+    subprocess.check_output = f
+check_output = subprocess.check_output
 
 
 __version__ = version = '0.5'

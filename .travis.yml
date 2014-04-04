@@ -17,6 +17,9 @@ install:
     - if [ "$TRAVIS_PYTHON_VERSION" == "2.6" ]; then pip --quiet install argparse unittest2; fi
     - if [ "$AUTOPEP8_VERSION" == "master" ]; then pip --quiet install git+git://github.com/hhatto/autopep8.git; fi
     - python setup.py --quiet build --build-base=".build-$TRAVIS_PYTHON_VERSION" install
+    - git config --global user.email "you@example.com"
+    - git config --global user.name "Your Name"
+    - echo -e "[ui]\nusername = Your Name <your@email.com>" ~/.hgrc
 
 script:
     - cd test
