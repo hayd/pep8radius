@@ -17,11 +17,13 @@ except ImportError:
 
 # python 2.6 doesn't include check_output
 # http://hg.python.org/cpython/file/d37f963394aa/Lib/subprocess.py#l544
-if "check_output" not in dir(subprocess): # duck punch it in!
+if "check_output" not in dir(subprocess):  # duck punch it in!
     def f(*popenargs, **kwargs):
         if 'stdout' in kwargs:
-            raise ValueError('stdout argument not allowed, it will be overridden.')
-        process = subprocess.Popen(stdout=subprocess.PIPE, *popenargs, **kwargs)
+            raise ValueError(
+                'stdout argument not allowed, it will be overridden.')
+        process = subprocess.Popen(
+            stdout=subprocess.PIPE, *popenargs, **kwargs)
         output, unused_err = process.communicate()
         retcode = process.poll()
         if retcode:
@@ -83,7 +85,7 @@ def main():
 
 def parse_args(arguments):
     description = ("PEP8 clean only the parts of the files which you have "
-                   "touched since the last commit, previous commit or " 
+                   "touched since the last commit, previous commit or "
                    "branch.")
     epilog = ("Run before you commit, or against a previous commit or "
               "branch before merging.")
@@ -153,6 +155,7 @@ def parse_args(arguments):
             args.ignore = DEFAULT_IGNORE.split(',')
 
     return args
+
 
 class Radius:
 
@@ -307,6 +310,7 @@ def line_numbers_from_file_udiff(udiff):
         yield (start + pre_padding,
                start + lines_in_range - 1)
 
+
 def udiff_lines_changes(u):
     """
     Count lines removed in udiff
@@ -321,7 +325,7 @@ def udiff_lines_changes(u):
 
 class RadiusGit(Radius):
 
-    def current_branch(self ):
+    def current_branch(self):
         output = check_output(["git", "rev-parse", "--abbrev-ref", "HEAD"])
         return output.strip().decode('utf-8')
 

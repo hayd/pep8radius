@@ -19,11 +19,12 @@ def _in_test_directory():
     # TODO just move to dir then move back?
     head, test = os.path.split(os.getcwd())
     _, pep8radius = os.path.split(head)
-    print head, test
     return test == 'test' and pep8radius == 'btyfi'
+
 
 @skipIf(not _in_test_directory(), "Not in test directory.")
 class TestRadius(TestCase):
+
     def __init__(self, *args, **kwargs):
         self._in_test_directory = _in_test_directory()
         self.using_vc = self.init_vc()
@@ -90,6 +91,7 @@ class TestRadius(TestCase):
 
         return text
 
+
 class MixinTests:
 
     def test_one_line(self):
@@ -116,7 +118,7 @@ class TestRadiusGit(TestRadius, MixinTests):
             return False
 
     def successfully_commit_files(self, file_names,
-                                        commit="initial_commit"):
+                                  commit="initial_commit"):
         try:
             check_output(["git", "add"] + file_names)
             check_output(["git", "commit", "-m", commit])
