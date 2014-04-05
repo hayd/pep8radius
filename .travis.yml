@@ -7,11 +7,11 @@ python:
     - "3.2"
     - "3.3"
 env:
-  - AUTOPEP8_VERSION=lastest
+  - AUTOPEP8_VERSION=latest
   - AUTOPEP8_VERSION=master
 matrix:
   allow_failures:
-    - env: AUTOPEP8_VERSION=master
+    - env: AUTOPEP8_VERSION=latest
 
 install:
     - if [ "$TRAVIS_PYTHON_VERSION" == "2.6" ]; then pip --quiet install argparse unittest2; fi

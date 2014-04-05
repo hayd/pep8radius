@@ -5,6 +5,7 @@ pep8radius aka Better-Than-You-Found-It (btyfi)
 
 [![Current PyPi Version](http://img.shields.io/pypi/v/pep8radius.svg)](https://pypi.python.org/pypi/pep8radius)
 [![MIT licensed](http://img.shields.io/badge/license-MIT-brightgreen.svg)](http://choosealicense.com/licenses/mit/)
+[![Travis CI Status](http://img.shields.io/travis/hayd/btyfi.svg)](https://travis-ci.org/hayd/btyfi/builds)
 [![PyPi Monthly Downloads](http://img.shields.io/pypi/dm/pep8radius.svg)](https://pypi.python.org/pypi/pep8radius)
 
 Fixing the entire project of PEP8 infractions ("PEP8 storms") can lead to merge conflicts, add noise to merges / pull requests and break (git) blame. pep8radius solves this problem by fixing only those PEP8 infractions incontained on the lines of the project which you've been working, leaving these sections "better than you found it" whilst keeping your commits focused on the areas of the codebase you were actually working on.
