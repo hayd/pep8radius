@@ -44,7 +44,6 @@ DEFAULT_INDENT_SIZE = 4
 
 
 def main():
-    """Tool main."""
     try:
         # Exit on broken pipe.
         signal.signal(signal.SIGPIPE, signal.SIG_DFL)
@@ -160,32 +159,37 @@ def parse_args(arguments):
 class Radius:
 
     def __init__(self, rev=None, options=None):
+        # pep8radius specific options
         self.rev = rev if rev is not None else self.current_branch()
         self.options = options if options else parse_args([''])
         self.verbose = self.options.verbose
         self.dry_run = self.options.dry_run
         self.diff = self.options.diff or self.options.dry_run
 
-        # TODO parse autopep8 options properly (ensure allowable)
         if not self.options.exclude:
             self.options.exclude = []
         if not self.options.ignore:
             self.options.ignore = DEFAULT_IGNORE.split(',')
 
+        # autopep8 specific options
         self.options.verbose = max(0, self.options.verbose - 1)
         self.options.in_place = False
         self.options.diff = False
+
+        # Note: This may raise a CalledProcessError, if it does it means
+        # that there's been an error with the version control command.
         self.filenames_diff = self.get_filenames_diff()
 
     @staticmethod
     def new(rev=None, options=None, vc=None):
-        """
-        Create subclass instance of Radius with correct version control
+        """Create subclass instance of Radius with correct version control
 
         e.g. RadiusGit if using git
 
         """
         if vc is None:
+            # Note: this can raise a NotImplementedError if it exhausts
+            # list of supported version controls without success.
             vc = which_version_control()
 
         try:
@@ -196,20 +200,22 @@ class Radius:
         return r(rev=rev, options=options)
 
     def pep8radius(self):
-        "Better than you found it. autopep8 the diff lines in each py file"
+        """PEP8 clean only the parts of the files which you have touched
+        since the last commit, previous commit or branch.
+
+        """
         n = len(self.filenames_diff)
 
-        self.p('Applying autopep8 to touched lines in %s file(s).'
-               % len(self.filenames_diff))
+        self.p('Applying autopep8 to touched lines in %s file(s).' % n)
 
-        i = total_lines_changed = 0
+        total_lines_changed = 0
         pep8_diffs = []
         for i, file_name in enumerate(self.filenames_diff, start=1):
             self.p('%s/%s: %s: ' % (i, n, file_name), end='')
             self.p('', min_=2)
 
             p_diff = self.pep8radius_file(file_name)
-            lines_changed = udiff_lines_changes(p_diff) if p_diff else 0
+            lines_changed = udiff_lines_fixed(p_diff) if p_diff else 0
             total_lines_changed += lines_changed
             self.p('fixed %s lines.' % lines_changed, max_=1)
 
@@ -228,14 +234,20 @@ class Radius:
                 print(diff)
 
     def pep8radius_file(self, file_name):
-        "Apply autopep8 to the diff lines of file f"
-        # Presumably if was going to raise would have at get_filenames_diff
+        """Apply autopep8 to the diff lines of a file.
+        Returns the diff between original and fixed file.
+
+        """
+        # We hope that a CalledProcessError would have already raised
+        # during the init if it were going to raise here.
         cmd = self.file_diff_cmd(file_name)
         diff = check_output(cmd).decode('utf-8')
 
         with open(file_name, 'r') as f:
             original = f.read()
 
+        # Apply line fixes "up" the file (i.e. in reverse) so that
+        # fixes do not affect changes we're yet to make.
         partial = original
         for start, end in self.line_numbers_from_file_diff(diff):
             partial = self.autopep8_line_range(partial, start, end)
@@ -287,8 +299,7 @@ class Radius:
 # #############################
 
 def line_numbers_from_file_udiff(udiff):
-    """
-    Parse a udiff, return iterator of tuples of (start, end) line numbers.
+    """Parse a udiff, return iterator of tuples of (start, end) line numbers.
 
     Note: returned in descending order (as autopep8 can +- lines)
 
@@ -306,18 +317,19 @@ def line_numbers_from_file_udiff(udiff):
 
         sub_lines = sum(line.startswith('-') for line in c.splitlines())
         lines_in_range = len(c.splitlines()) - sub_lines - post_padding
-
+        # The lines_in_range are either added or remained the same between
+        # the padding line, we could be slightly fussier and return only
+        # the ranges of added lines, but chose not to.
         yield (start + pre_padding,
                start + lines_in_range - 1)
 
 
-def udiff_lines_changes(u):
-    """
-    Count lines removed in udiff
+def udiff_lines_fixed(u):
+    """Count lines fixed (removed) in udiff.
 
     """
     removed_changes = re.findall('\n\-', u)
-    return sum(len(removed_changes) for c in removed_changes)
+    return len(removed_changes)
 
 
 # #####   vc specific   #####
@@ -384,8 +396,7 @@ def using_hg():
 
 
 def which_version_control():
-    """
-    Try to see if they are using git or hg.
+    """Try to see if they are using git or hg.
     return git, hg or raise NotImplementedError.
 
     """
