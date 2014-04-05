@@ -24,13 +24,18 @@ def _in_test_directory():
 @skipIf(not _in_test_directory, "Not in test directory.")
 class TestRadius(TestCase):
     def __init__(self, *args, **kwargs):
+        self._in_test_directory = _in_test_directory()
         self.using_vc = self.init_vc()
         super(TestRadius, self).__init__(*args, **kwargs)
 
     def init_vc(self):
+        if not self._in_test_directory:
+            return False
         return self.delete_and_create_repo()
 
     def setUp(self):
+        if not self._in_test_directory:
+            raise SkipTest("Not in test directory.")
         if not self.using_vc:
             raise SkipTest("%s not available" % self.vc)
 
