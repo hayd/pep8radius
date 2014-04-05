@@ -1,28 +1,27 @@
-from __future__ import absolute_import
-from btyfi import Radius, RadiusGit, RadiusHg
 from difflib import unified_diff
-import filecmp
 import os
-from os import remove
-from shutil import copyfile, rmtree
-from subprocess import check_output, CalledProcessError
-from sys import version_info
+from shutil import rmtree
+from subprocess import CalledProcessError
+import sys
 
-if version_info < (2, 7):
-    from unittest2 import main, skipIf, SkipTest, TestCase
+if sys.version_info < (2, 7):
+    from unittest2 import main, SkipTest, TestCase
 else:
-    from unittest import main, skipIf, SkipTest, TestCase
+    from unittest import main, SkipTest, TestCase
+
+# This ensures we are using the latest, without being in a package.
+ROOT_DIR = os.path.split(os.path.abspath(os.path.dirname(__file__)))[0]
+sys.path.insert(0, ROOT_DIR)
+from btyfi import Radius, RadiusGit, RadiusHg, check_output
 
 
 def _in_test_directory():
     "If not in this directory, version control won't work correctly."
     # TODO just move to dir then move back?
-    head, test = os.path.split(os.getcwd())
-    _, pep8radius = os.path.split(head)
-    return test == 'test' and pep8radius == 'btyfi'
+    here, _ = os.path.split(os.path.realpath(__file__))
+    return here == os.getcwd()
 
 
-@skipIf(not _in_test_directory(), "Not in test directory.")
 class TestRadius(TestCase):
 
     def __init__(self, *args, **kwargs):
@@ -44,11 +43,11 @@ class TestRadius(TestCase):
     def check(self, original, modified, expected, test_name='check'):
         """Modify original to modified, and check that pep8radius
         turns this into expected."""
+
         temp_file = 'temp.py'
 
         with open(temp_file, 'w') as f:
             f.write(original)
-
         committed = self.successfully_commit_files([temp_file])
 
         with open(temp_file, 'w') as f:
@@ -60,17 +59,20 @@ class TestRadius(TestCase):
 
         with open(temp_file, 'r') as f:
             result = f.read()
-        self.assertTrue(result == expected,
-                        self.diff(expected, result, test_name))
+        self.assert_equal(result, expected, test_name)
 
-        # Run pep8radius again
+        # Run pep8radius again, it *should* be that this doesn't do anything.
         r.pep8radius()
         with open(temp_file, 'r') as f:
             result = f.read()
-        self.assertTrue(result == expected,
-                        self.diff(expected, result, test_name))
+        self.assert_equal(result, expected, test_name)
 
-    # This is a copy of autopep8's get_diff_text
+    def assert_equal(self, result, expected, test_name):
+        """like assertEqual but with a nice diff output if not equal"""
+        self.assertEqual(result, expected,
+                         self.diff(expected, result, test_name))
+
+    # This is similar to autopep8's get_diff_text
     @staticmethod
     def diff(expected, result, file_name):
         """Return text of unified diff between old and new."""
@@ -80,19 +82,18 @@ class TestRadius(TestCase):
                             file_name + '/expected',
                             file_name + '/result',
                             lineterm=newline)
-
         text = newline
         for line in diff:
             text += line
-
             # Work around missing newline (http://bugs.python.org/issue2142).
             if not line.endswith(newline):
                 text += newline + r'\ No newline at end of file' + newline
-
         return text
 
 
 class MixinTests:
+
+    """All Radius tests are placed in this class"""
 
     def test_one_line(self):
         original = 'def poor_indenting():\n  a = 1\n  b = 2\n  return a + b\n\nfoo = 1; bar = 2; print(foo * bar)\na=1; b=2; c=3\nd=7\n\ndef f(x = 1, y = 2):\n    return x + y\n'
@@ -103,8 +104,6 @@ class MixinTests:
 
 class TestRadiusGit(TestRadius, MixinTests):
     vc = 'git'
-
-    # Critical that we're in correct directory.
 
     def delete_and_create_repo(self):
         try:
@@ -129,8 +128,6 @@ class TestRadiusGit(TestRadius, MixinTests):
 
 class TestRadiusHg(TestRadius, MixinTests):
     vc = 'hg'
-
-    # Critical that we're in correct directory.
 
     def delete_and_create_repo(self):
         try:
