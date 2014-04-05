@@ -2,6 +2,7 @@ from __future__ import print_function
 import argparse
 import autopep8
 from itertools import takewhile
+import glob
 import re
 import signal
 import subprocess
@@ -33,7 +34,7 @@ if "check_output" not in dir(subprocess): # duck punch it in!
 check_output = subprocess.check_output
 
 
-__version__ = version = '0.5'
+__version__ = version = '0.6'
 
 
 DEFAULT_IGNORE = 'E24'
@@ -151,11 +152,6 @@ def parse_args(arguments):
         else:
             args.ignore = DEFAULT_IGNORE.split(',')
 
-    if args.exclude:
-        args.exclude = args.exclude.split(',')
-    else:
-        args.exclude = []
-
     return args
 
 class Radius:
@@ -267,7 +263,13 @@ class Radius:
         diff_files_u = diff_files_b.decode('utf-8')
         diff_files = self.parse_diff_filenames(diff_files_u)
 
-        return [f for f in diff_files if f.endswith('.py')]
+        py_files = set(f for f in diff_files if f.endswith('.py'))
+
+        if self.options.exclude:
+            excludes = glob.glob(self.options.exclude)
+            py_files.difference_update(excludes)
+            print(excludes)
+        return py_files
 
     def line_numbers_from_file_diff(self, diff):
         "Potentially this is vc specific (if not using udiff)"
@@ -298,14 +300,13 @@ def line_numbers_from_file_udiff(udiff):
     for c, start in zip(chunks, line_numbers):
         empty = [line.startswith(' ') for line in c.splitlines()]
         pre_padding = sum(1 for _ in takewhile(lambda b: b, empty))
-        new_lines = sum(line.startswith('+') for line in c)
         post_padding = sum(1 for _ in takewhile(lambda b: b, empty[::-1]))
 
-        sub_lines = sum(line.startswith('-') for line in c)
-        lines_in_range = len(c.splitlines()) - sub_lines
+        sub_lines = sum(line.startswith('-') for line in c.splitlines())
+        lines_in_range = len(c.splitlines()) - sub_lines - post_padding
 
         yield (start + pre_padding,
-               start + pre_padding + sub_lines - 1)
+               start + lines_in_range)
 
 
 def udiff_lines_changes(u):
@@ -322,7 +323,7 @@ def udiff_lines_changes(u):
 
 class RadiusGit(Radius):
 
-    def current_branch(self):
+    def current_branch(self ):
         output = check_output(["git", "rev-parse", "--abbrev-ref", "HEAD"])
         return output.strip().decode('utf-8')
 
