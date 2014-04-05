@@ -1,6 +1,6 @@
 from __future__ import absolute_import
-from autopep8 import get_diff_text
 from btyfi import Radius, RadiusGit, RadiusHg
+from difflib import unified_diff
 import filecmp
 import os
 from os import remove
@@ -34,7 +34,7 @@ class TestRadius(TestCase):
         if not self.using_vc:
             raise SkipTest("%s not available" % self.vc)
 
-    def check(self, original, modified, expected, commit='check'):
+    def check(self, original, modified, expected, test_name='check'):
         """Modify original to modified, and check that pep8radius
         turns this into expected."""
         temp_file = 'temp.py'
@@ -54,18 +54,35 @@ class TestRadius(TestCase):
         with open(temp_file, 'r') as f:
             result = f.read()
         self.assertTrue(result == expected,
-                        get_diff_text(result.splitlines(True),
-                                      expected.splitlines(True),
-                                      commit))
+                        self.diff(expected, result, test_name))
 
         # Run pep8radius again
         r.pep8radius()
         with open(temp_file, 'r') as f:
             result = f.read()
         self.assertTrue(result == expected,
-                        get_diff_text(result.splitlines(True),
-                                      expected.splitlines(True),
-                                      commit))
+                        self.diff(expected, result, test_name))
+
+    # This is a copy of autopep8's get_diff_text
+    @staticmethod
+    def diff(expected, result, file_name):
+        """Return text of unified diff between old and new."""
+        result, expected = result.splitlines(True), expected.splitlines(True)
+        newline = '\n'
+        diff = unified_diff(expected, result,
+                            file_name + '/expected',
+                            file_name + '/result',
+                            lineterm=newline)
+
+        text = newline
+        for line in diff:
+            text += line
+
+            # Work around missing newline (http://bugs.python.org/issue2142).
+            if not line.endswith(newline):
+                text += newline + r'\ No newline at end of file' + newline
+
+        return text
 
 class MixinTests:
 

@@ -348,7 +348,7 @@ class RadiusHg(Radius):
 
     def file_diff_cmd(self, f):
         "Get diff for one file, f"
-        return ['hg', 'diff', '-c', self.rev, f]
+        return ['hg', 'diff', '-r', self.rev, f]
 
     def filenames_diff_cmd(self):
         "Get the names of the py files in diff"

@@ -17,11 +17,11 @@ def version():
                 return parse(line).body[0].value.s
 
 def readme():
-    with open('README.md') as f:
-        try:
-            import pypandoc
-            return pypandoc.convert(f, 'rst', format='md')
-        except (IOError, ImportError):
+    try:
+        import pypandoc
+        return pypandoc.convert('README.md', 'rst', format='md')
+    except (IOError, ImportError):
+        with open('README.md') as f:
             return f.read()
 
 INSTALL_REQUIRES = (
