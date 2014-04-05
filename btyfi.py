@@ -236,7 +236,6 @@ class Radius:
         partial = original
         for start, end in self.line_numbers_from_file_diff(diff):
             partial = self.autopep8_line_range(partial, start, end)
-            # import pdb; pdb.set_trace()
             self.p('.', end='', max_=1)
         self.p('', max_=1)
         fixed = partial
@@ -268,12 +267,12 @@ class Radius:
         if self.options.exclude:
             excludes = glob.glob(self.options.exclude)
             py_files.difference_update(excludes)
-            print(excludes)
-        return py_files
+        return list(py_files)
 
     def line_numbers_from_file_diff(self, diff):
         "Potentially this is vc specific (if not using udiff)"
-        return line_numbers_from_file_udiff(diff)
+        for start, end in line_numbers_from_file_udiff(diff):
+            yield start, end
 
     def p(self, something_to_print, end=None, min_=1, max_=99):
         if min_ <= self.verbose <= max_:
@@ -306,8 +305,7 @@ def line_numbers_from_file_udiff(udiff):
         lines_in_range = len(c.splitlines()) - sub_lines - post_padding
 
         yield (start + pre_padding,
-               start + lines_in_range)
-
+               start + lines_in_range - 1)
 
 def udiff_lines_changes(u):
     """

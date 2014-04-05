@@ -19,9 +19,10 @@ def _in_test_directory():
     # TODO just move to dir then move back?
     head, test = os.path.split(os.getcwd())
     _, pep8radius = os.path.split(head)
-    return test == 'test' and pep8radius == 'pep8radius'
+    print head, test
+    return test == 'test' and pep8radius == 'btyfi'
 
-@skipIf(not _in_test_directory, "Not in test directory.")
+@skipIf(not _in_test_directory(), "Not in test directory.")
 class TestRadius(TestCase):
     def __init__(self, *args, **kwargs):
         self._in_test_directory = _in_test_directory()
@@ -92,8 +93,8 @@ class TestRadius(TestCase):
 class MixinTests:
 
     def test_one_line(self):
-        original = 'def poor_indenting():\n  a = 1\n  b = 2\n  return a + b\n\nfoo = 1; bar = 2; print(foo * bar)\na=1; b=2; c=3\nd=7\n\ndef f(x = 1, y = 2):\n    return x + y'
-        modified = 'def poor_indenting():\n  a = 1\n  b = 2\n  return a + b\n\nfoo = 1; bar = 2; print(foo * bar)\na=1; b=42; c=3\nd=7\n\ndef f(x = 1, y = 2):\n    return x + y'
+        original = 'def poor_indenting():\n  a = 1\n  b = 2\n  return a + b\n\nfoo = 1; bar = 2; print(foo * bar)\na=1; b=2; c=3\nd=7\n\ndef f(x = 1, y = 2):\n    return x + y\n'
+        modified = 'def poor_indenting():\n  a = 1\n  b = 2\n  return a + b\n\nfoo = 1; bar = 2; print(foo * bar)\na=1; b=42; c=3\nd=7\n\ndef f(x = 1, y = 2):\n    return x + y\n'
         expected = 'def poor_indenting():\n  a = 1\n  b = 2\n  return a + b\n\nfoo = 1; bar = 2; print(foo * bar)\na = 1\nb = 42\nc = 3\nd=7\n\ndef f(x = 1, y = 2):\n    return x + y\n'
         self.check(original, modified, expected, 'test_one_line')
 
