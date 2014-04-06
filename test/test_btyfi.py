@@ -10,35 +10,37 @@ else:
     from unittest import main, SkipTest, TestCase
 
 # This ensures we are using the latest, without being in a package.
-ROOT_DIR = os.path.split(os.path.abspath(os.path.dirname(__file__)))[0]
+TEST_DIR = os.path.abspath(os.path.dirname(__file__))
+ROOT_DIR = os.path.split(TEST_DIR)[0]
 sys.path.insert(0, ROOT_DIR)
 from btyfi import Radius, RadiusGit, RadiusHg, check_output
-
-
-def _in_test_directory():
-    "If not in this directory, version control won't work correctly."
-    # TODO just move to dir then move back?
-    here, _ = os.path.split(os.path.realpath(__file__))
-    return here == os.getcwd()
 
 
 class TestRadius(TestCase):
 
     def __init__(self, *args, **kwargs):
-        self._in_test_directory = _in_test_directory()
+        self.original_dir = os.getcwd()
+        self.from_test_directory = TEST_DIR == self.original_dir
         self.using_vc = self.init_vc()
         super(TestRadius, self).__init__(*args, **kwargs)
 
     def init_vc(self):
-        if not self._in_test_directory:
-            return False
-        return self.delete_and_create_repo()
+        if not self.from_test_directory:
+            os.chdir(TEST_DIR)
+        success = self.delete_and_create_repo()
+        if not self.from_test_directory:
+            os.chdir(self.original_dir)
+        return success
 
     def setUp(self):
-        if not self._in_test_directory:
-            raise SkipTest("Not in test directory.")
+        if not self.from_test_directory:
+            os.chdir(TEST_DIR)
         if not self.using_vc:
             raise SkipTest("%s not available" % self.vc)
+
+    def tearDown(self):
+        if not self.from_test_directory:
+            os.chdir(self.original_dir)
 
     def check(self, original, modified, expected, test_name='check'):
         """Modify original to modified, and check that pep8radius
@@ -107,7 +109,7 @@ class TestRadiusGit(TestRadius, MixinTests):
 
     def delete_and_create_repo(self):
         try:
-            rmtree(os.path.join(os.getcwd(), '.git'))
+            rmtree(os.path.join(TEST_DIR, '.git'))
         except OSError:
             pass
         try:
@@ -131,7 +133,7 @@ class TestRadiusHg(TestRadius, MixinTests):
 
     def delete_and_create_repo(self):
         try:
-            rmtree(os.path.join(os.getcwd(), '.hg'))
+            rmtree(os.path.join(TEST_DIR, '.hg'))
         except OSError:
             pass
         try:
