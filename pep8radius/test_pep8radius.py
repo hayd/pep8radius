@@ -40,8 +40,6 @@ class TestRadius(TestCase):
 
         temp_file = 'temp.py'
 
-        if options is None:
-            options = []
         options = parse_args(options)
 
         with open(temp_file, 'w') as f:
