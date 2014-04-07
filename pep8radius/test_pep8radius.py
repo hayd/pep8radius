@@ -1,6 +1,7 @@
+from __future__ import absolute_import
 from difflib import unified_diff
 import os
-from pep8radius import Radius, RadiusGit, RadiusHg, check_output, parse_args
+from pep8radius.pep8radius import Radius, RadiusGit, RadiusHg, check_output, parse_args
 from shutil import rmtree
 from subprocess import CalledProcessError, STDOUT
 import sys
