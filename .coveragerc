@@ -1,0 +1,14 @@
+[run]
+omit =
+    pep8radius/temp/*.py
+    pep8radius/test_*.py
+    pep8radius/__init__.py
+
+data_file = .coverage
+
+[report]
+exclude_lines =
+    pragma: no cover
+    def __repr__
+    raise NotImplementedError
+    if __name__ == .__main__.:

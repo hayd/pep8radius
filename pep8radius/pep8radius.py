@@ -13,14 +13,15 @@ from sys import exit
 
 try:
     from StringIO import StringIO
-except ImportError:
+except ImportError:  # pragma: no cover
     from io import StringIO
 
 # python 2.6 doesn't include check_output
 # http://hg.python.org/cpython/file/d37f963394aa/Lib/subprocess.py#l544
-if "check_output" not in dir(subprocess):  # duck punch it in!
+if "check_output" not in dir(subprocess):  # pragma: no cover
+    # duck punch it in!
     def f(*popenargs, **kwargs):
-        if 'stdout' in kwargs:
+        if 'stdout' in kwargs:  # pragma: no cover
             raise ValueError(
                 'stdout argument not allowed, it will be overridden.')
         process = subprocess.Popen(
@@ -45,7 +46,7 @@ DEFAULT_INDENT_SIZE = 4
 
 
 def main():
-    try:
+    try: # pragma: no cover
         # Exit on broken pipe.
         signal.signal(signal.SIGPIPE, signal.SIG_DFL)
     except AttributeError:  # pragma: no cover
@@ -79,8 +80,8 @@ def main():
 
         r.pep8radius()
 
-    except KeyboardInterrupt:
-        return 1  # pragma: no cover
+    except KeyboardInterrupt:  # pragma: no cover
+        return 1
 
 
 def parse_args(arguments=None):
@@ -242,10 +243,10 @@ class Radius:
 
         if self.dry_run:
             self.p('pep8radius would fix %s lines in %s files.'
-                   % (total_lines_changed, i))
+                   % (total_lines_changed, n))
         else:
             self.p('pep8radius fixed %s lines in %s files.'
-                   % (total_lines_changed, i))
+                   % (total_lines_changed, n))
 
         if self.diff:
             for diff in pep8_diffs:
@@ -313,6 +314,7 @@ class Radius:
         if self.options.exclude:
             excludes = glob.glob(self.options.exclude)
             py_files.difference_update(excludes)
+
         return list(py_files)
 
     def line_numbers_from_file_diff(self, diff):
@@ -403,8 +405,11 @@ class RadiusHg(Radius):
     @staticmethod
     def parse_diff_filenames(diff_files):
         "Parse the output of filenames_diff_cmd"
-        # TODO promote this to Radius ?
-        return re.findall('(?<=[$| |\n]).*\.py', diff_files)
+        # one issue is that occasionaly you get stdout from something else
+        # specifically I found this in Coverage.py, luckily the format is
+        # different (at least in this case)
+        it = re.findall('(\n|^) (?P<file_name>.*\.py) \|', diff_files)
+        return [t[1] for t in it]
 
 
 radii = {'git': RadiusGit, 'hg': RadiusHg}

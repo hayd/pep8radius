@@ -1,6 +1,7 @@
+from __future__ import absolute_import
 from difflib import unified_diff
 import os
-from pep8radius import Radius, RadiusGit, RadiusHg, check_output, parse_args
+from pep8radius.pep8radius import Radius, RadiusGit, RadiusHg, check_output, parse_args
 from shutil import rmtree
 from subprocess import CalledProcessError, STDOUT
 import sys
@@ -40,13 +41,12 @@ class TestRadius(TestCase):
 
         temp_file = 'temp.py'
 
-        if options is None:
-            options = []
         options = parse_args(options)
 
         with open(temp_file, 'w') as f:
             f.write(original)
-        committed = self.successfully_commit_files([temp_file])
+        committed = self.successfully_commit_files([temp_file],
+                                                   commit=test_name)
 
         with open(temp_file, 'w') as f:
             f.write(modified)
@@ -116,7 +116,8 @@ class MixinTests:
 class TestRadiusGit(TestRadius, MixinTests):
     vc = 'git'
 
-    def delete_and_create_repo(self):
+    @staticmethod
+    def delete_and_create_repo():
         try:
             rmtree(os.path.join(TEMP_DIR, '.git'))
         except OSError:
@@ -127,7 +128,8 @@ class TestRadiusGit(TestRadius, MixinTests):
         except (OSError, CalledProcessError):
             return False
 
-    def successfully_commit_files(self, file_names,
+    @staticmethod
+    def successfully_commit_files(file_names,
                                   commit="initial_commit"):
         try:
             check_output(["git", "add"] + file_names, stderr=STDOUT)
@@ -140,7 +142,8 @@ class TestRadiusGit(TestRadius, MixinTests):
 class TestRadiusHg(TestRadius, MixinTests):
     vc = 'hg'
 
-    def delete_and_create_repo(self):
+    @staticmethod
+    def delete_and_create_repo():
         try:
             rmtree(os.path.join(TEMP_DIR, '.hg'))
         except OSError:
@@ -151,7 +154,8 @@ class TestRadiusHg(TestRadius, MixinTests):
         except (OSError, CalledProcessError):
             return False
 
-    def successfully_commit_files(self, file_names,
+    @staticmethod
+    def successfully_commit_files(file_names,
                                   commit="initial_commit"):
         try:
             check_output(["hg", "add"] + file_names, stderr=STDOUT)
