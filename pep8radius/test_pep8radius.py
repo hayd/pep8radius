@@ -1,5 +1,6 @@
 from difflib import unified_diff
 import os
+from pep8radius import Radius, RadiusGit, RadiusHg, check_output, parse_args
 from shutil import rmtree
 from subprocess import CalledProcessError, STDOUT
 import sys
@@ -9,47 +10,38 @@ if sys.version_info < (2, 7):
 else:
     from unittest import main, SkipTest, TestCase
 
-# This ensures we are using the latest, without being in a package.
-TEST_DIR = os.path.abspath(os.path.dirname(__file__))
-ROOT_DIR = os.path.split(TEST_DIR)[0]
-sys.path.insert(0, ROOT_DIR)
-from btyfi import Radius, RadiusGit, RadiusHg, check_output, parse_args
+TEMP_DIR = os.path.join(os.path.abspath(os.path.dirname(__file__)),
+                        'temp')
+try:
+    os.mkdir(TEMP_DIR)
+except OSError:
+    pass
 
 
 class TestRadius(TestCase):
 
     def __init__(self, *args, **kwargs):
         self.original_dir = os.getcwd()
-        self.from_test_directory = TEST_DIR == self.original_dir
         self.using_vc = self.init_vc()
         super(TestRadius, self).__init__(*args, **kwargs)
 
     def init_vc(self):
-        if not self.from_test_directory:
-            os.chdir(TEST_DIR)
+        os.chdir(TEMP_DIR)
         success = self.delete_and_create_repo()
-        if not self.from_test_directory:
-            os.chdir(self.original_dir)
+        os.chdir(self.original_dir)
         return success
-
-    def setUp(self):
-        if not self.from_test_directory:
-            os.chdir(TEST_DIR)
-        if not self.using_vc:
-            raise SkipTest("%s not available" % self.vc)
-
-    def tearDown(self):
-        if not self.from_test_directory:
-            os.chdir(self.original_dir)
 
     def check(self, original, modified, expected, test_name='check', options=None):
         """Modify original to modified, and check that pep8radius
         turns this into expected."""
+        os.chdir(TEMP_DIR)
+        if not self.using_vc:
+            raise SkipTest("%s not available" % self.vc)
 
         temp_file = 'temp.py'
+
         if options is None:
             options = []
-
         options = parse_args(options)
 
         with open(temp_file, 'w') as f:
@@ -73,6 +65,8 @@ class TestRadius(TestCase):
         with open(temp_file, 'r') as f:
             result = f.read()
         self.assert_equal(result, expected, test_name)
+
+        os.chdir(self.original_dir)
 
     def assert_equal(self, result, expected, test_name):
         """like assertEqual but with a nice diff output if not equal"""
@@ -124,7 +118,7 @@ class TestRadiusGit(TestRadius, MixinTests):
 
     def delete_and_create_repo(self):
         try:
-            rmtree(os.path.join(TEST_DIR, '.git'))
+            rmtree(os.path.join(TEMP_DIR, '.git'))
         except OSError:
             pass
         try:
@@ -148,7 +142,7 @@ class TestRadiusHg(TestRadius, MixinTests):
 
     def delete_and_create_repo(self):
         try:
-            rmtree(os.path.join(TEST_DIR, '.hg'))
+            rmtree(os.path.join(TEMP_DIR, '.hg'))
         except OSError:
             pass
         try:

@@ -22,5 +22,11 @@ install:
     - echo -e "[ui]\nusername = Your Name <your@email.com>" > ~/.hgrc
 
 script:
-    - cd test
-    - python test_btyfi.py
+    - python pep8radius/test_pep8radius.py
+
+after_success:
+    - pip install --quiet coverage
+    - make coverage
+
+    - pip install --quiet coveralls
+    - coveralls

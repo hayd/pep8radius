@@ -37,7 +37,7 @@ if "check_output" not in dir(subprocess):  # duck punch it in!
 check_output = subprocess.check_output
 
 
-__version__ = version = '0.6'
+__version__ = version = '0.7a'
 
 
 DEFAULT_IGNORE = 'E24'

@@ -1,3 +1,3 @@
 include README.md
 include LICENSE.md
-include btyfi.py
+include pep8radius/pep8radius.py

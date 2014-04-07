@@ -1,3 +1,7 @@
 temp.py
-test/.*
+pep8radius/temp
 *.pyc
+.coverage.*
+dist/
+build/
+*.egg-info/

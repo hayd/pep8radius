@@ -1,5 +1,5 @@
-pep8radius aka Better-Than-You-Found-It (btyfi) 
------------------------------------------------
+pep8radius
+----------
 
 [PEP8](http://legacy.python.org/dev/peps/pep-0008/) clean only the parts of the files which you have touched since the last commit, previous commit or branch.
 
@@ -49,11 +49,12 @@ Options
 -------
 
 ```
-usage: btyfi.py [-h] [--version] [-v] [-d] [--dry-run] [-p n] [-a]
-                [--experimental] [--exclude globs] [--list-fixes]
-                [--ignore errors] [--select errors] [--max-line-length n]
-                [--indent-size n]
-                [rev]
+usage: pep8radius.py [-h] [--version] [-v] [-d] [--dry-run] [-p n] [-a]
+                     [--experimental] [--exclude globs] [--list-fixes]
+                     [--ignore errors] [--select errors] [--max-line-length n]
+                     [--indent-size n] [--docformatter] [--no-blank]
+                     [--pre-summary-newline] [--force-wrap]
+                     [rev]
 
 positional arguments:
   rev                   commit or name of branch to compare against
@@ -79,5 +80,13 @@ optional arguments:
   --select errors       fix only these errors/warnings (e.g. E4,W)
   --max-line-length n   set maximum allowed line length (default: 79)
   --indent-size n       number of spaces per indent level (default 4)
+  --docformatter        fix docstrings for PEP257 using docformatter
+  --no-blank            do not add blank line after description; used by
+                        docformatter
+  --pre-summary-newline
+                        add a newline before the summary of a multi-line
+                        docstring; used by docformatter
+  --force-wrap          force descriptions to be wrapped even if it may result
+                        in a mess; used by docformatter
 ```
 *For more information about these options see [autopep8](https://pypi.python.org/pypi/autopep8).*
