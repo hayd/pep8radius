@@ -47,6 +47,8 @@ class TestRadius(TestCase):
         turns this into expected."""
 
         temp_file = 'temp.py'
+        if options is None:
+            options = []
 
         options = parse_args(options)
 
@@ -113,7 +115,8 @@ class MixinTests:
         self.check(original, modified, expected, 'test_with_docformatter',)
 
         expected = 'def poor_indenting():\n  """Very great function."""\n  a = 1\n  b = 2\n  return a + b\n\n\n\nfoo = 1; bar = 2; print(foo * bar)\na = 1\nb = 42\nc = 3\nd=7\n\ndef f(x = 1, y = 2):\n    return x + y\n'
-        self.check(original, modified, expected, 'test_with_docformatter', ['--docformatter'])
+        self.check(original, modified, expected,
+                   'test_with_docformatter', ['--docformatter'])
 
 
 class TestRadiusGit(TestRadius, MixinTests):

@@ -282,21 +282,16 @@ class Radius:
         self.options.line_range = [start, end]
         fixed = autopep8.fix_code(f,   self.options)
 
-        print (fixed)
-
         if self.options.docformatter:
             fixed = docformatter.format_code(
                 fixed,
-                summary_wrap_length=self.options.max_line_length -
-                1,
+                summary_wrap_length=self.options.max_line_length - 1,
                 description_wrap_length=(self.options.max_line_length
                                          - 2 * self.options.indent_size),
                 pre_summary_newline=self.options.pre_summary_newline,
                 post_description_blank=self.options.post_description_blank,
                 force_wrap=self.options.force_wrap,
                 line_range=[start, end])
-
-        print (fixed)
 
         return fixed
 
