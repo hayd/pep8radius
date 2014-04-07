@@ -1,7 +1,7 @@
 from difflib import unified_diff
 import os
 from shutil import rmtree
-from subprocess import CalledProcessError
+from subprocess import CalledProcessError, STDOUT
 import sys
 
 if sys.version_info < (2, 7):
@@ -13,7 +13,7 @@ else:
 TEST_DIR = os.path.abspath(os.path.dirname(__file__))
 ROOT_DIR = os.path.split(TEST_DIR)[0]
 sys.path.insert(0, ROOT_DIR)
-from btyfi import Radius, RadiusGit, RadiusHg, check_output
+from btyfi import Radius, RadiusGit, RadiusHg, check_output, parse_args
 
 
 class TestRadius(TestCase):
@@ -42,11 +42,15 @@ class TestRadius(TestCase):
         if not self.from_test_directory:
             os.chdir(self.original_dir)
 
-    def check(self, original, modified, expected, test_name='check'):
+    def check(self, original, modified, expected, test_name='check', options=None):
         """Modify original to modified, and check that pep8radius
         turns this into expected."""
 
         temp_file = 'temp.py'
+        if options is None:
+            options = []
+
+        options = parse_args(options)
 
         with open(temp_file, 'w') as f:
             f.write(original)
@@ -56,7 +60,7 @@ class TestRadius(TestCase):
             f.write(modified)
 
         # Run pep8radius
-        r = Radius.new(vc=self.vc)
+        r = Radius.new(vc=self.vc, options=options)
         r.pep8radius()
 
         with open(temp_file, 'r') as f:
@@ -65,6 +69,7 @@ class TestRadius(TestCase):
 
         # Run pep8radius again, it *should* be that this doesn't do anything.
         r.pep8radius()
+
         with open(temp_file, 'r') as f:
             result = f.read()
         self.assert_equal(result, expected, test_name)
@@ -103,6 +108,16 @@ class MixinTests:
         expected = 'def poor_indenting():\n  a = 1\n  b = 2\n  return a + b\n\nfoo = 1; bar = 2; print(foo * bar)\na = 1\nb = 42\nc = 3\nd=7\n\ndef f(x = 1, y = 2):\n    return x + y\n'
         self.check(original, modified, expected, 'test_one_line')
 
+    def test_with_docformatter(self):
+        original = 'def poor_indenting():\n  """       Great function"""\n  a = 1\n  b = 2\n  return a + b\n\n\n\nfoo = 1; bar = 2; print(foo * bar)\na=1; b=2; c=3\nd=7\n\ndef f(x = 1, y = 2):\n    return x + y\n'
+        modified = 'def poor_indenting():\n  """  Very great function"""\n  a = 1\n  b = 2\n  return a + b\n\n\n\nfoo = 1; bar = 2; print(foo * bar)\na=1; b=42; c=3\nd=7\n\ndef f(x = 1, y = 2):\n    return x + y\n'
+        expected = 'def poor_indenting():\n  """  Very great function"""\n  a = 1\n  b = 2\n  return a + b\n\n\n\nfoo = 1; bar = 2; print(foo * bar)\na = 1\nb = 42\nc = 3\nd=7\n\ndef f(x = 1, y = 2):\n    return x + y\n'
+        self.check(original, modified, expected, 'test_with_docformatter',)
+
+        expected = 'def poor_indenting():\n  """Very great function."""\n  a = 1\n  b = 2\n  return a + b\n\n\n\nfoo = 1; bar = 2; print(foo * bar)\na = 1\nb = 42\nc = 3\nd=7\n\ndef f(x = 1, y = 2):\n    return x + y\n'
+        self.check(original, modified, expected,
+                   'test_with_docformatter', ['--docformatter'])
+
 
 class TestRadiusGit(TestRadius, MixinTests):
     vc = 'git'
@@ -113,7 +128,7 @@ class TestRadiusGit(TestRadius, MixinTests):
         except OSError:
             pass
         try:
-            check_output(["git", "init"])
+            check_output(["git", "init"], stderr=STDOUT)
             return True
         except (OSError, CalledProcessError):
             return False
@@ -121,8 +136,8 @@ class TestRadiusGit(TestRadius, MixinTests):
     def successfully_commit_files(self, file_names,
                                   commit="initial_commit"):
         try:
-            check_output(["git", "add"] + file_names)
-            check_output(["git", "commit", "-m", commit])
+            check_output(["git", "add"] + file_names, stderr=STDOUT)
+            check_output(["git", "commit", "-m", commit], stderr=STDOUT)
             return True
         except (OSError, CalledProcessError):
             return False
@@ -137,7 +152,7 @@ class TestRadiusHg(TestRadius, MixinTests):
         except OSError:
             pass
         try:
-            check_output(["hg", "init"])
+            check_output(["hg", "init"], stderr=STDOUT)
             return True
         except (OSError, CalledProcessError):
             return False
@@ -145,8 +160,8 @@ class TestRadiusHg(TestRadius, MixinTests):
     def successfully_commit_files(self, file_names,
                                   commit="initial_commit"):
         try:
-            check_output(["hg", "add"] + file_names)
-            check_output(["hg", "commit", "-m", commit])
+            check_output(["hg", "add"] + file_names, stderr=STDOUT)
+            check_output(["hg", "commit", "-m", commit], stderr=STDOUT)
             return True
         except (OSError, CalledProcessError):
             return False
