@@ -2,16 +2,19 @@
 # -*- coding: utf-8 -*-
 
 from ast import parse
+import os
 from setuptools import setup
 from sys import version_info
 
 
-NAME = 'Better-Than-You-Found-It'  # 'pep8radius'
+NAME = 'pep8radius' #  'Better-Than-You-Found-It'
 
 
 def version():
     """Return version string."""
-    with open('btyfi.py') as input_file:
+    with open(os.path.join(os.path.abspath(os.path.dirname(__file__)),
+                           'pep8radius',
+                           'pep8radius.py')) as input_file:
         for line in input_file:
             if line.startswith('__version__'):
                 return parse(line).body[0].value.s
@@ -33,8 +36,8 @@ INSTALL_REQUIRES = (
 setup(
     name=NAME,
     version=version(),
-    description="Tidy up (autopep8) only the lines in the files touched "
-                "in the git or hg branch/commit.",
+    description="PEP8 clean only the parts of the files which you have touched"
+                " since the last commit, previous commit or branch.",
     long_description=readme(),
     license='MIT License',
     author='Andy Hayden',
@@ -59,9 +62,9 @@ setup(
     ],
     keywords='automation, pep8, format, autopep8, git, hg, mercurial',
     install_requires=INSTALL_REQUIRES,
-    test_suite='test.test_btyfi',
-    py_modules=['btyfi'],
+    test_suite='pep8radius.test_pep8radius',
+    py_modules=['pep8radius.pep8radius'],
     zip_safe=False,
-    entry_points={'console_scripts': ['btyfi = btyfi:main',
-                                      'pep8radius = btyfi:main']},
+    entry_points={'console_scripts': ['btyfi = pep8radius.pep8radius:main',
+                                      'pep8radius = pep8radius.pep8radius:main']},
 )
