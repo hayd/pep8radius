@@ -150,6 +150,9 @@ def parse_args(arguments=None):
                         help='force descriptions to be wrapped even if it may '
                              'result in a mess; used by docformatter')
 
+    if arguments is None:
+        arguments = []
+
     args = parser.parse_args(arguments)
 
     # sanity check args (from autopep8)
