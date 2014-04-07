@@ -1,6 +1,7 @@
 from __future__ import print_function
 import argparse
 import autopep8
+import docformatter
 from itertools import takewhile
 import glob
 import re
@@ -82,7 +83,7 @@ def main():
         return 1  # pragma: no cover
 
 
-def parse_args(arguments):
+def parse_args(arguments=None):
     description = ("PEP8 clean only the parts of the files which you have "
                    "touched since the last commit, previous commit or "
                    "branch.")
@@ -134,6 +135,20 @@ def parse_args(arguments):
                         type=int, metavar='n',
                         help='number of spaces per indent level '
                              '(default %(default)s)')
+    # docformatter
+    parser.add_argument('--docformatter', action='store_true',
+                        help='fix docstrings for PEP257 using docformatter')
+    parser.add_argument('--no-blank', dest='post_description_blank',
+                        action='store_false',
+                        help='do not add blank line after description; '
+                             'used by docformatter')
+    parser.add_argument('--pre-summary-newline',
+                        action='store_true',
+                        help='add a newline before the summary of a '
+                             'multi-line docstring; used by docformatter')
+    parser.add_argument('--force-wrap', action='store_true',
+                        help='force descriptions to be wrapped even if it may '
+                             'result in a mess; used by docformatter')
 
     args = parser.parse_args(arguments)
 
@@ -263,9 +278,27 @@ class Radius:
                                       file_name)
 
     def autopep8_line_range(self, f, start, end):
-        "Apply autopep8 between start and end of file f"
+        """Apply autopep8 between start and end of file f xcasxz."""
         self.options.line_range = [start, end]
-        return autopep8.fix_code(f,   self.options)
+        fixed = autopep8.fix_code(f,   self.options)
+
+        print (fixed)
+
+        if self.options.docformatter:
+            fixed = docformatter.format_code(
+                fixed,
+                summary_wrap_length=self.options.max_line_length -
+                1,
+                description_wrap_length=(self.options.max_line_length
+                                         - 2 * self.options.indent_size),
+                pre_summary_newline=self.options.pre_summary_newline,
+                post_description_blank=self.options.post_description_blank,
+                force_wrap=self.options.force_wrap,
+                line_range=[start, end])
+
+        print (fixed)
+
+        return fixed
 
     def get_filenames_diff(self):
         "Get the py files which have been changed since rev"
