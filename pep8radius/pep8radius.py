@@ -4,6 +4,7 @@ import autopep8
 import docformatter
 from itertools import takewhile
 import glob
+import os
 import re
 import signal
 import subprocess
@@ -312,10 +313,16 @@ class Radius:
         py_files = set(f for f in diff_files if f.endswith('.py'))
 
         if self.options.exclude:
+            # TODO do we have to take this from root dir?
             excludes = glob.glob(self.options.exclude)
             py_files.difference_update(excludes)
 
-        return list(py_files)
+        root_dir = self.root_dir()
+        py_files_full = [os.path.join(root_dir,
+                                      file_name)
+                            for file_name in py_files]
+
+        return list(py_files_full)
 
     def line_numbers_from_file_diff(self, diff):
         "Potentially this is vc specific (if not using udiff)"
@@ -370,8 +377,14 @@ def udiff_lines_fixed(u):
 
 class RadiusGit(Radius):
 
-    def current_branch(self):
+    @staticmethod
+    def current_branch():
         output = check_output(["git", "rev-parse", "--abbrev-ref", "HEAD"])
+        return output.strip().decode('utf-8')
+
+    @staticmethod
+    def root_dir():
+        output = check_output(['git', 'rev-parse', '--show-toplevel'])
         return output.strip().decode('utf-8')
 
     def file_diff_cmd(self, f):
@@ -390,8 +403,14 @@ class RadiusGit(Radius):
 
 class RadiusHg(Radius):
 
-    def current_branch(self):
+    @staticmethod
+    def current_branch():
         output = check_output(["hg", "id", "-b"])
+        return output.strip().decode('utf-8')
+
+    @staticmethod
+    def root_dir():
+        output = check_output(['hg', 'root'])
         return output.strip().decode('utf-8')
 
     def file_diff_cmd(self, f):
@@ -419,15 +438,15 @@ def using_git():
     try:
         git_log = check_output(["git", "log"], stderr=STDOUT)
         return True
-    except CalledProcessError:
+    except (CalledProcessError, OSError):
         return False
 
 
 def using_hg():
     try:
-        hg_log = check_output(["hg", "log"], stderr=STDOUT)
+        hg_log = check_output(["hg",   "log"], stderr=STDOUT)
         return True
-    except CalledProcessError:
+    except (CalledProcessError, OSError):
         return False
 
 
