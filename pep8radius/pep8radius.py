@@ -18,8 +18,8 @@ except ImportError:  # pragma: no cover
 
 # python 2.6 doesn't include check_output
 # http://hg.python.org/cpython/file/d37f963394aa/Lib/subprocess.py#l544
-if "check_output" not in dir(subprocess):  # duck punch it in!
-    # pragma: no cover
+if "check_output" not in dir(subprocess): # pragma: no cover
+    # duck punch it in!
     def f(*popenargs, **kwargs):
         if 'stdout' in kwargs:
             raise ValueError(
