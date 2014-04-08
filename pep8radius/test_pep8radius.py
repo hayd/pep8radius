@@ -1,15 +1,20 @@
 from __future__ import absolute_import
 import autopep8
-from difflib import unified_diff
+from contextlib import contextmanager
 import os
 from pep8radius.pep8radius import (Radius, RadiusGit, RadiusHg,
                                    check_output, parse_args,
                                    which_version_control,
                                    using_git, using_hg,
-                                   version)
+                                   version, get_diff)
 from shutil import rmtree
 from subprocess import CalledProcessError, STDOUT
 import sys
+
+try:
+    from StringIO import StringIO
+except ImportError:
+    from io import StringIO
 
 if sys.version_info < (2, 7):
     from unittest2 import main, SkipTest, TestCase
@@ -31,6 +36,17 @@ try:
     os.mkdir(SUBTEMP_DIR)
 except OSError:
     pass
+
+
+@contextmanager
+def captured_output():
+    new_out, new_err = StringIO(), StringIO()
+    old_out, old_err = sys.stdout, sys.stderr
+    try:
+        sys.stdout, sys.stderr = new_out, new_err
+        yield sys.stdout, sys.stderr
+    finally:
+        sys.stdout, sys.stderr = old_out, old_err
 
 
 class TestRadiusNoVCS(TestCase):
@@ -70,7 +86,7 @@ class TestRadiusNoVCS(TestCase):
         # again, git is already seen before this
         self.assertTrue(using_git())
 
-    def test_args(self):
+    def test_autopep8_args(self):
         # TODO see that these are passes on (use a static method in Radius?)
 
         args = ['hello.py']
@@ -103,8 +119,9 @@ class TestRadiusNoVCS(TestCase):
 
     def test_bad_rev(self):
         self.assertRaises(CalledProcessError,
-                          check_output,
-                          ['python', PEP8RADIUS, 'random_junk_sha'])
+                          lambda x: Radius.new(rev=x),
+                          'random_junk_sha')
+
 
 class TestRadius(TestCase):
 
@@ -134,10 +151,6 @@ class TestRadius(TestCase):
 
         temp_file = os.path.join(TEMP_DIR, 'temp.py')
 
-        if options is None:
-            options = []
-        options += ['--in-place']
-
         options = parse_args(options)
 
         with open(temp_file, 'w') as f:
@@ -148,8 +161,27 @@ class TestRadius(TestCase):
         with open(temp_file, 'w') as f:
             f.write(modified)
 
-        # Run pep8radius
+        options.verbose = 1
         r = Radius.new(vc=self.vc, options=options)
+        with captured_output() as (out, err):
+            r.pep8radius()
+        self.assertIn('would fix', out.getvalue())
+        self.assertNotIn('@@', out.getvalue())
+        options.verbose = 0
+
+        options.diff = True
+        r = Radius.new(vc=self.vc, options=options)
+        with captured_output() as (out, err):
+            r.pep8radius()
+        exp_diff = get_diff(modified, expected, temp_file)
+        # last char in getvalue is an additional new line
+        self.assertEqual(exp_diff, out.getvalue()[:-1])
+        options.diff = False
+
+
+        options.in_place = True
+        r = Radius.new(vc=self.vc, options=options)
+        # Run pep8radius
         r.pep8radius()
 
         with open(temp_file, 'r') as f:
@@ -166,25 +198,8 @@ class TestRadius(TestCase):
     def assert_equal(self, result, expected, test_name):
         """like assertEqual but with a nice diff output if not equal"""
         self.assertEqual(result, expected,
-                         self.diff(expected, result, test_name))
-
-    # This is similar to autopep8's get_diff_text
-    @staticmethod
-    def diff(expected, result, file_name):
-        """Return text of unified diff between old and new."""
-        result, expected = result.splitlines(True), expected.splitlines(True)
-        newline = '\n'
-        diff = unified_diff(expected, result,
-                            file_name + '/expected',
-                            file_name + '/result',
-                            lineterm=newline)
-        text = newline
-        for line in diff:
-            text += line
-            # Work around missing newline (http://bugs.python.org/issue2142).
-            if not line.endswith(newline):
-                text += newline + r'\ No newline at end of file' + newline
-        return text
+                         get_diff(expected, result, test_name,
+                                  'expected', 'result'))
 
 
 class MixinTests:

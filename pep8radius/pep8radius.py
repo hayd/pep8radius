@@ -2,6 +2,7 @@ from __future__ import print_function
 import argparse
 import autopep8
 import docformatter
+from difflib import unified_diff
 from itertools import takewhile
 import glob
 import os
@@ -73,7 +74,7 @@ def main():
         except NotImplementedError as e:  # pragma: no cover
             print(e.message)
             exit(1)
-        except CalledProcessError as c:
+        except CalledProcessError as c:  # pragma: no cover
             # cut off usage of git diff and exit
             output = c.output.splitlines()[0]
             print(output)
@@ -166,12 +167,16 @@ def parse_args(arguments=None):
 
     if args.ignore:
         args.ignore = args.ignore.split(',')
-    elif not args.select:
-        if args.aggressive:
-            # Enable everything by default if aggressive.
-            args.select = ['E', 'W']
-        else:
-            args.ignore = DEFAULT_IGNORE.split(',')
+    elif not args.select and args.aggressive:
+        # Enable everything by default if aggressive.
+        args.select = ['E', 'W']
+    else:
+        args.ignore = DEFAULT_IGNORE.split(',')
+
+    if args.exclude:
+        args.exclude = args.exclude.split(',')
+    else:
+        args.exclude = []
 
     return args
 
@@ -185,13 +190,6 @@ class Radius:
         self.verbose = self.options.verbose
         self.in_place = self.options.in_place
         self.diff = self.options.diff
-
-        if self.options.exclude:
-            self.options.exclude = self.options.exclude.split(',')
-        else:
-            self.options.exclude = []
-        if not self.options.ignore:
-            self.options.ignore = DEFAULT_IGNORE.split(',')
 
         # autopep8 specific options
         self.options.verbose = max(0, self.options.verbose - 1)
@@ -280,9 +278,7 @@ class Radius:
         if self.in_place:
             with open(file_name, 'w') as f:
                 f.write(fixed)
-        return autopep8.get_diff_text(original.splitlines(True),
-                                      fixed.splitlines(True),
-                                      file_name)
+        return get_diff(original, fixed, file_name)
 
     def autopep8_line_range(self, f, start, end):
         """Apply autopep8 between start and end of file f xcasxz."""
@@ -373,6 +369,25 @@ def udiff_lines_fixed(u):
     """
     removed_changes = re.findall('\n\-', u)
     return len(removed_changes)
+
+
+# This is similar to autopep8's get_diff_text
+def get_diff(original, fixed, file_name,
+             original_label='original', fixed_label='fixed'):
+    """Return text of unified diff between original and fixed."""
+    original, fixed = original.splitlines(True), fixed.splitlines(True)
+    newline = '\n'
+    diff = unified_diff(original, fixed,
+                        file_name + '/' + original_label,
+                        file_name + '/' + fixed_label,
+                        lineterm=newline)
+    text = newline
+    for line in diff:
+        text += line
+        # Work around missing newline (http://bugs.python.org/issue2142).
+        if not line.endswith(newline):
+            text += newline + r'\ No newline at end of file' + newline
+    return text
 
 
 # #####   vc specific   #####

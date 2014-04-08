@@ -5,8 +5,10 @@ pep8radius
 
 [![Current PyPi Version](http://img.shields.io/pypi/v/pep8radius.svg)](https://pypi.python.org/pypi/pep8radius)
 [![MIT licensed](http://img.shields.io/badge/license-MIT-brightgreen.svg)](http://choosealicense.com/licenses/mit/)
-[![Travis CI Status](http://img.shields.io/travis/hayd/btyfi.svg)](https://travis-ci.org/hayd/btyfi/builds)
+[![Travis CI Status](http://img.shields.io/travis/hayd/pep8radius.svg)](https://travis-ci.org/hayd/pep8radius/builds)
+[![Coverage Status](https://coveralls.io/repos/hayd/pep8radius/badge.png)](https://coveralls.io/r/hayd/pep8radius)
 [![PyPi Monthly Downloads](http://img.shields.io/pypi/dm/pep8radius.svg)](https://pypi.python.org/pypi/pep8radius)
+
 
 Fixing the entire project of PEP8 infractions ("PEP8 storms") can lead to merge conflicts, add noise to merges / pull requests and break (git) blame. pep8radius solves this problem by fixing only those PEP8 infractions incontained on the lines of the project which you've been working, leaving these sections "better than you found it" whilst keeping your commits focused on the areas of the codebase you were actually working on.
 
@@ -24,7 +26,7 @@ pep8radius requires [autopep8](https://pypi.python.org/pypi/autopep8), which in 
 
 VCS Support
 -----------
-[Git](http://git-scm.com/) and [Mecurial (hg)](http://mercurial.selenic.com/). Please request support for other version control systems on [github](https://github.com/hayd/btyfi).
+[Git](http://git-scm.com/) and [Mecurial (hg)](http://mercurial.selenic.com/). Please request support for other version control systems on [github](https://github.com/hayd/pep8radius).
 
 Usage
 -----
