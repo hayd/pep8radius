@@ -32,8 +32,8 @@ Usage
 -----
 - Move to project directory
 - Make some changes to the project
-- `Run pep8radius --dry-run # don't make the changes to files, just view the diff`
-- `Run pep8radius           # apply the fixes`
+- Run `pep8radius --diff       # view a diff of proposed fixed`
+- Run `pep8radius --in-place   # apply the fixes`
 - Commit your changes
 
 Against a branch you can use the same syntax as with git diff:
@@ -42,7 +42,13 @@ Against a branch you can use the same syntax as with git diff:
 $ pep8radius master   # branch name
 $ pep8radius c12166f  # commit hash
 
-$ pep8radius master --dry-run  # these work with other options too
+$ pep8radius master --in-place  # these work with other options too
+```
+
+You can also fix docstrings ([PEP257](http://legacy.python.org/dev/peps/pep-0257/)) using the [docformatter](https://pypi.python.org/pypi/docformatter) option:
+
+```sh
+$ pep8radius --docformatter --diff
 ```
 
 *Note: can also use `btyfi` alias for `pep8radius`.*
@@ -51,7 +57,7 @@ Options
 -------
 
 ```
-usage: pep8radius.py [-h] [--version] [-v] [-d] [--dry-run] [-p n] [-a]
+usage: pep8radius.py [-h] [--version] [-v] [-d] [-i] [-p n] [-a]
                      [--experimental] [--exclude globs] [--list-fixes]
                      [--ignore errors] [--select errors] [--max-line-length n]
                      [--indent-size n] [--docformatter] [--no-blank]
@@ -67,8 +73,7 @@ optional arguments:
   -v, --verbose         print verbose messages; multiple -v result in more
                         verbose messages (passed to autopep8)
   -d, --diff            print the diff for the fixed source
-  --dry-run             do not make the changes in place and print diff
-
+  -i, --in-place        make the changes in place
   -p n, --pep8-passes n
                         maximum number of additional pep8 passes (default:
                         infinite)
