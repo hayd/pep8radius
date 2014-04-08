@@ -70,7 +70,7 @@ def main():
 
         try:
             r = Radius.new(rev=args.rev, options=args)
-        except NotImplementedError as e:
+        except NotImplementedError as e:  # pragma: no cover
             print(e.message)
             exit(1)
         except CalledProcessError as c:
@@ -108,8 +108,8 @@ def parse_args(arguments=None):
                         'multiple -v result in more verbose messages')
     parser.add_argument('-d', '--diff', action='store_true', dest='diff',
                         help='print the diff for the fixed source')
-    parser.add_argument('--dry-run', action='store_true',
-                        help="do not make the changes in place and print diff")
+    parser.add_argument('-i', '--in-place', action='store_true',
+                        help="make the changes in place")
     parser.add_argument('-p', '--pep8-passes', metavar='n',
                         default=-1, type=int,
                         help='maximum number of additional pep8 passes '
@@ -158,7 +158,7 @@ def parse_args(arguments=None):
     args = parser.parse_args(arguments)
 
     # sanity check args (from autopep8)
-    if args.max_line_length <= 0:
+    if args.max_line_length <= 0:  # pragma: no cover
         parser.error('--max-line-length must be greater than 0')
 
     if args.select:
@@ -183,10 +183,12 @@ class Radius:
         self.rev = rev if rev is not None else self.current_branch()
         self.options = options if options else parse_args([''])
         self.verbose = self.options.verbose
-        self.dry_run = self.options.dry_run
-        self.diff = self.options.diff or self.options.dry_run
+        self.in_place = self.options.in_place
+        self.diff = self.options.diff
 
-        if not self.options.exclude:
+        if self.options.exclude:
+            self.options.exclude = self.options.exclude.split(',')
+        else:
             self.options.exclude = []
         if not self.options.ignore:
             self.options.ignore = DEFAULT_IGNORE.split(',')
@@ -215,7 +217,7 @@ class Radius:
         try:
             r = radii[vc]
         except KeyError:
-            return NotImplementedError("Unknown version control system.")
+            raise NotImplementedError("Unknown version control system.")
 
         return r(rev=rev, options=options)
 
@@ -242,11 +244,11 @@ class Radius:
             if p_diff and self.diff:
                 pep8_diffs.append(p_diff)
 
-        if self.dry_run:
-            self.p('pep8radius would fix %s lines in %s files.'
+        if self.in_place:
+            self.p('pep8radius fixed %s lines in %s files.'
                    % (total_lines_changed, n))
         else:
-            self.p('pep8radius fixed %s lines in %s files.'
+            self.p('pep8radius would fix %s lines in %s files.'
                    % (total_lines_changed, n))
 
         if self.diff:
@@ -275,7 +277,7 @@ class Radius:
         self.p('', max_=1)
         fixed = partial
 
-        if not self.options.dry_run:
+        if self.options.in_place:
             with open(file_name, 'w') as f:
                 f.write(fixed)
         return autopep8.get_diff_text(original.splitlines(True),
@@ -314,8 +316,9 @@ class Radius:
 
         if self.options.exclude:
             # TODO do we have to take this from root dir?
-            excludes = glob.glob(self.options.exclude)
-            py_files.difference_update(excludes)
+            for pattern in self.options.exclude:
+                py_files.difference_update(glob.fnmatch.filter(py_files,
+                                                               pattern))
 
         root_dir = self.root_dir()
         py_files_full = [os.path.join(root_dir,

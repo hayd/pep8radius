@@ -16,6 +16,9 @@ if sys.version_info < (2, 7):
 else:
     from unittest import main, SkipTest, TestCase
 
+PEP8RADIUS = os.path.join(os.path.abspath(os.path.dirname(__file__)),
+                          'pep8radius.py')
+
 TEMP_DIR = os.path.join(os.path.abspath(os.path.dirname(__file__)),
                         'temp')
 SUBTEMP_DIR = os.path.join(TEMP_DIR, 'subtemp')
@@ -47,6 +50,15 @@ class TestRadiusNoVCS(TestCase):
         # This see the above repo, which is pep8radius and using git !
         pass
 
+    def test_bad_vc(self):
+        self.assertRaises(NotImplementedError,
+                          lambda x: Radius.new(vc=x),
+                          'made_up_vc')
+
+    def test_unknown_vc(self):
+        # we have pep8radius is uing git...
+        self.assertTrue(isinstance(Radius.new(None), RadiusGit))
+
     def test_using_vc(self):
         TestRadiusGit.delete_repo()
         TestRadiusHg.delete_repo()
@@ -56,8 +68,7 @@ class TestRadiusNoVCS(TestCase):
         self.assertTrue(using_hg())
 
         # again, git is already seen before this
-        TestRadiusGit.create_repo()
-        self.assertFalse(using_git())
+        self.assertTrue(using_git())
 
     def test_args(self):
         # TODO see that these are passes on (use a static method in Radius?)
@@ -81,25 +92,20 @@ class TestRadiusNoVCS(TestCase):
         self.assertEqual(us.aggressive, them.aggressive)
 
     def test_version_number(self):
-        p8r_file = os.path.join(os.path.abspath(os.path.dirname(__file__)),
-                                'pep8radius.py')
-        version_ = check_output(['python', p8r_file, '--version']).strip()
+        version_ = check_output(['python', PEP8RADIUS, '--version'])
+        version_ = version_.decode('utf-8').strip()
         self.assertEqual(version_, version)
 
     def test_list_fixes(self):
-        p8r_file = os.path.join(os.path.abspath(os.path.dirname(__file__)),
-                                'pep8radius.py')
-        fixes = check_output(['python', p8r_file, '--list-fixes'])
+        fixes = check_output(['python', PEP8RADIUS, '--list-fixes'])
         afixes = check_output(['autopep8', '--list-fixes'])
         self.assertEqual(fixes, afixes)
 
     def test_trial_run(self):
-        p8r_file = os.path.join(os.path.abspath(os.path.dirname(__file__)),
-                                'pep8radius.py')
-        # fixes = check_output(['python', p8r_file, '--dry-run'])
+        # fixes = check_output(['python', PEP8RADIUS, '--dry-run'])
         self.assertRaises(CalledProcessError,
                           check_output,
-                          ['python', p8r_file, 'random_junk_sha', '--dry-run'])
+                          ['python', PEP8RADIUS, 'random_junk_sha', '--dry-run'])
 
 class TestRadius(TestCase):
 
@@ -129,6 +135,9 @@ class TestRadius(TestCase):
 
         temp_file = os.path.join(TEMP_DIR, 'temp.py')
 
+        if options is None:
+            options = ['--in-place']
+
         options = parse_args(options)
 
         with open(temp_file, 'w') as f:
@@ -138,9 +147,6 @@ class TestRadius(TestCase):
 
         with open(temp_file, 'w') as f:
             f.write(modified)
-
-        # TODO a dry-run
-        # TODO check diff
 
         # Run pep8radius
         r = Radius.new(vc=self.vc, options=options)
