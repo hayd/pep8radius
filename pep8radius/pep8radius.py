@@ -2,8 +2,10 @@ from __future__ import print_function
 import argparse
 import autopep8
 import docformatter
+from difflib import unified_diff
 from itertools import takewhile
 import glob
+import os
 import re
 import signal
 import subprocess
@@ -69,10 +71,10 @@ def main():
 
         try:
             r = Radius.new(rev=args.rev, options=args)
-        except NotImplementedError as e:
+        except NotImplementedError as e:  # pragma: no cover
             print(e.message)
             exit(1)
-        except CalledProcessError as c:
+        except CalledProcessError as c:  # pragma: no cover
             # cut off usage of git diff and exit
             output = c.output.splitlines()[0]
             print(output)
@@ -107,8 +109,8 @@ def parse_args(arguments=None):
                         'multiple -v result in more verbose messages')
     parser.add_argument('-d', '--diff', action='store_true', dest='diff',
                         help='print the diff for the fixed source')
-    parser.add_argument('--dry-run', action='store_true',
-                        help="do not make the changes in place and print diff")
+    parser.add_argument('-i', '--in-place', action='store_true',
+                        help="make the changes in place")
     parser.add_argument('-p', '--pep8-passes', metavar='n',
                         default=-1, type=int,
                         help='maximum number of additional pep8 passes '
@@ -157,7 +159,7 @@ def parse_args(arguments=None):
     args = parser.parse_args(arguments)
 
     # sanity check args (from autopep8)
-    if args.max_line_length <= 0:
+    if args.max_line_length <= 0:  # pragma: no cover
         parser.error('--max-line-length must be greater than 0')
 
     if args.select:
@@ -165,12 +167,16 @@ def parse_args(arguments=None):
 
     if args.ignore:
         args.ignore = args.ignore.split(',')
-    elif not args.select:
-        if args.aggressive:
-            # Enable everything by default if aggressive.
-            args.select = ['E', 'W']
-        else:
-            args.ignore = DEFAULT_IGNORE.split(',')
+    elif not args.select and args.aggressive:
+        # Enable everything by default if aggressive.
+        args.select = ['E', 'W']
+    else:
+        args.ignore = DEFAULT_IGNORE.split(',')
+
+    if args.exclude:
+        args.exclude = args.exclude.split(',')
+    else:
+        args.exclude = []
 
     return args
 
@@ -182,13 +188,8 @@ class Radius:
         self.rev = rev if rev is not None else self.current_branch()
         self.options = options if options else parse_args([''])
         self.verbose = self.options.verbose
-        self.dry_run = self.options.dry_run
-        self.diff = self.options.diff or self.options.dry_run
-
-        if not self.options.exclude:
-            self.options.exclude = []
-        if not self.options.ignore:
-            self.options.ignore = DEFAULT_IGNORE.split(',')
+        self.in_place = self.options.in_place
+        self.diff = self.options.diff
 
         # autopep8 specific options
         self.options.verbose = max(0, self.options.verbose - 1)
@@ -214,7 +215,7 @@ class Radius:
         try:
             r = radii[vc]
         except KeyError:
-            return NotImplementedError("Unknown version control system.")
+            raise NotImplementedError("Unknown version control system.")
 
         return r(rev=rev, options=options)
 
@@ -241,11 +242,11 @@ class Radius:
             if p_diff and self.diff:
                 pep8_diffs.append(p_diff)
 
-        if self.dry_run:
-            self.p('pep8radius would fix %s lines in %s files.'
+        if self.in_place:
+            self.p('pep8radius fixed %s lines in %s files.'
                    % (total_lines_changed, n))
         else:
-            self.p('pep8radius fixed %s lines in %s files.'
+            self.p('pep8radius would fix %s lines in %s files.'
                    % (total_lines_changed, n))
 
         if self.diff:
@@ -274,12 +275,10 @@ class Radius:
         self.p('', max_=1)
         fixed = partial
 
-        if not self.options.dry_run:
+        if self.in_place:
             with open(file_name, 'w') as f:
                 f.write(fixed)
-        return autopep8.get_diff_text(original.splitlines(True),
-                                      fixed.splitlines(True),
-                                      file_name)
+        return get_diff(original, fixed, file_name)
 
     def autopep8_line_range(self, f, start, end):
         """Apply autopep8 between start and end of file f xcasxz."""
@@ -312,10 +311,17 @@ class Radius:
         py_files = set(f for f in diff_files if f.endswith('.py'))
 
         if self.options.exclude:
-            excludes = glob.glob(self.options.exclude)
-            py_files.difference_update(excludes)
+            # TODO do we have to take this from root dir?
+            for pattern in self.options.exclude:
+                py_files.difference_update(glob.fnmatch.filter(py_files,
+                                                               pattern))
 
-        return list(py_files)
+        root_dir = self.root_dir()
+        py_files_full = [os.path.join(root_dir,
+                                      file_name)
+                            for file_name in py_files]
+
+        return list(py_files_full)
 
     def line_numbers_from_file_diff(self, diff):
         "Potentially this is vc specific (if not using udiff)"
@@ -365,13 +371,38 @@ def udiff_lines_fixed(u):
     return len(removed_changes)
 
 
+# This is similar to autopep8's get_diff_text
+def get_diff(original, fixed, file_name,
+             original_label='original', fixed_label='fixed'):
+    """Return text of unified diff between original and fixed."""
+    original, fixed = original.splitlines(True), fixed.splitlines(True)
+    newline = '\n'
+    diff = unified_diff(original, fixed,
+                        file_name + '/' + original_label,
+                        file_name + '/' + fixed_label,
+                        lineterm=newline)
+    text = newline
+    for line in diff:
+        text += line
+        # Work around missing newline (http://bugs.python.org/issue2142).
+        if not line.endswith(newline):
+            text += newline + r'\ No newline at end of file' + newline
+    return text
+
+
 # #####   vc specific   #####
 # ###########################
 
 class RadiusGit(Radius):
 
-    def current_branch(self):
+    @staticmethod
+    def current_branch():
         output = check_output(["git", "rev-parse", "--abbrev-ref", "HEAD"])
+        return output.strip().decode('utf-8')
+
+    @staticmethod
+    def root_dir():
+        output = check_output(['git', 'rev-parse', '--show-toplevel'])
         return output.strip().decode('utf-8')
 
     def file_diff_cmd(self, f):
@@ -390,8 +421,14 @@ class RadiusGit(Radius):
 
 class RadiusHg(Radius):
 
-    def current_branch(self):
+    @staticmethod
+    def current_branch():
         output = check_output(["hg", "id", "-b"])
+        return output.strip().decode('utf-8')
+
+    @staticmethod
+    def root_dir():
+        output = check_output(['hg', 'root'])
         return output.strip().decode('utf-8')
 
     def file_diff_cmd(self, f):
@@ -419,15 +456,15 @@ def using_git():
     try:
         git_log = check_output(["git", "log"], stderr=STDOUT)
         return True
-    except CalledProcessError:
+    except (CalledProcessError, OSError):
         return False
 
 
 def using_hg():
     try:
-        hg_log = check_output(["hg", "log"], stderr=STDOUT)
+        hg_log = check_output(["hg",   "log"], stderr=STDOUT)
         return True
-    except CalledProcessError:
+    except (CalledProcessError, OSError):
         return False
 
 
