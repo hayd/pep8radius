@@ -101,11 +101,10 @@ class TestRadiusNoVCS(TestCase):
         afixes = check_output(['autopep8', '--list-fixes'])
         self.assertEqual(fixes, afixes)
 
-    def test_trial_run(self):
-        # fixes = check_output(['python', PEP8RADIUS, '--dry-run'])
+    def test_bad_rev(self):
         self.assertRaises(CalledProcessError,
                           check_output,
-                          ['python', PEP8RADIUS, 'random_junk_sha', '--dry-run'])
+                          ['python', PEP8RADIUS, 'random_junk_sha'])
 
 class TestRadius(TestCase):
 
@@ -136,7 +135,8 @@ class TestRadius(TestCase):
         temp_file = os.path.join(TEMP_DIR, 'temp.py')
 
         if options is None:
-            options = ['--in-place']
+            options = []
+        options += ['--in-place']
 
         options = parse_args(options)
 
@@ -226,6 +226,7 @@ class TestRadiusGit(TestRadius, MixinTests):
 
     @staticmethod
     def create_repo():
+        os.chdir(TEMP_DIR)
         try:
             check_output(["git", "init"], stderr=STDOUT)
             return True
@@ -235,6 +236,7 @@ class TestRadiusGit(TestRadius, MixinTests):
     @staticmethod
     def successfully_commit_files(file_names,
                                   commit="initial_commit"):
+        os.chdir(TEMP_DIR)
         try:
             check_output(["git", "add"] + file_names, stderr=STDOUT)
             check_output(["git", "commit", "-m", commit], stderr=STDOUT)
@@ -248,7 +250,6 @@ class TestRadiusHg(TestRadius, MixinTests):
 
     @staticmethod
     def delete_repo():
-        os.chdir(TEMP_DIR)
         try:
             rmtree(os.path.join(TEMP_DIR, '.hg'))
         except OSError:

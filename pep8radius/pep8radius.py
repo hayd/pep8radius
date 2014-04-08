@@ -277,7 +277,7 @@ class Radius:
         self.p('', max_=1)
         fixed = partial
 
-        if self.options.in_place:
+        if self.in_place:
             with open(file_name, 'w') as f:
                 f.write(fixed)
         return autopep8.get_diff_text(original.splitlines(True),
