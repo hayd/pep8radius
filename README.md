@@ -6,7 +6,7 @@ pep8radius
 [![Current PyPi Version](http://img.shields.io/pypi/v/pep8radius.svg)](https://pypi.python.org/pypi/pep8radius)
 [![MIT licensed](http://img.shields.io/badge/license-MIT-brightgreen.svg)](http://choosealicense.com/licenses/mit/)
 [![Travis CI Status](http://img.shields.io/travis/hayd/pep8radius.svg)](https://travis-ci.org/hayd/pep8radius/builds)
-[![Coverage Status](https://coveralls.io/repos/hayd/pep8radius/badge.png)](https://coveralls.io/r/hayd/pep8radius)
+[![Coverage Status](http://img.shields.io/coveralls/hayd/pep8radius.svg)](https://coveralls.io/r/hayd/pep8radius)
 [![PyPi Monthly Downloads](http://img.shields.io/pypi/dm/pep8radius.svg)](https://pypi.python.org/pypi/pep8radius)
 
 
