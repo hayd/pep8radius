@@ -19,24 +19,33 @@ except ImportError:  # pragma: no cover
     from io import StringIO
 
 # python 2.6 doesn't include check_output
-# http://hg.python.org/cpython/file/d37f963394aa/Lib/subprocess.py#l544
 if "check_output" not in dir(subprocess):  # pragma: no cover
     # duck punch it in!
-    def f(*popenargs, **kwargs):
+    import subprocess
+    def check_output(*popenargs, **kwargs):
         if 'stdout' in kwargs:  # pragma: no cover
-            raise ValueError(
-                'stdout argument not allowed, it will be overridden.')
-        process = subprocess.Popen(
-            stdout=subprocess.PIPE, *popenargs, **kwargs)
+            raise ValueError('stdout argument not allowed, it will be overridden.')
+        process = subprocess.Popen(stdout=subprocess.PIPE, *popenargs, **kwargs)
         output, unused_err = process.communicate()
         retcode = process.poll()
         if retcode:
             cmd = kwargs.get("args")
             if cmd is None:
                 cmd = popenargs[0]
-            raise subprocess.CalledProcessError(retcode, cmd)
+            raise subprocess.CalledProcessError(retcode, cmd, output=output)
         return output
-    subprocess.check_output = f
+    subprocess.check_output = check_output
+
+    class CalledProcessError(Exception):
+        def __init__(self, returncode, cmd, output=None):
+            self.returncode = returncode
+            self.cmd = cmd
+            self.output = output
+        def __str__(self):
+            return "Command '%s' returned non-zero exit status %d" % (
+                self.cmd, self.returncode)
+    # overwrite CalledProcessError due to `output` keyword might be not available
+    subprocess.CalledProcessError = CalledProcessError
 check_output = subprocess.check_output
 
 
