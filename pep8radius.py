@@ -279,7 +279,10 @@ class Radius:
         # We hope that a CalledProcessError would have already raised
         # during the init if it were going to raise here.
         cmd = self.file_diff_cmd(file_name)
-        diff = check_output(cmd).decode('utf-8')
+        try:
+            diff = check_output(cmd).decode('utf-8')
+        except CalledProcessError as c:
+            diff = (c.output).decode('utf-8')
 
         with open(file_name, 'r') as f:
             original = f.read()
@@ -406,7 +409,8 @@ def line_numbers_from_file_udiff(udiff):
 
     # Note: these were reversed as can modify number of lines
     for c, start in zip(chunks, line_numbers):
-        empty = [line.startswith(' ') for line in c.splitlines()]
+        empty = [line.startswith(' ') or not line
+                 for line in c.splitlines()]
         pre_padding = sum(1 for _ in takewhile(lambda b: b, empty))
         post_padding = sum(1 for _ in takewhile(lambda b: b, empty[::-1]))
 
@@ -516,7 +520,33 @@ class RadiusHg(Radius):
         return [t[1] for t in it]
 
 
-radii = {'git': RadiusGit, 'hg': RadiusHg}
+class RadiusBzr(Radius):
+
+    @staticmethod
+    def current_branch():
+        output = check_output(["bzr", "nick"])
+        return output.strip().decode('utf-8')
+
+    @staticmethod
+    def root_dir():
+        output = check_output(['bzr', 'root'])
+        return output.strip().decode('utf-8')
+
+    def file_diff_cmd(self, f):
+        "Get diff for one file, f"
+        return ['bzr', 'diff', f]  # TODO '-r', self.rev ?
+
+    def filenames_diff_cmd(self):
+        "Get the names of the py files in diff"
+        return ['bzr', 'ls', '-VR']  # TODO '--from-root', '-r', self.rev ?
+
+    @staticmethod
+    def parse_diff_filenames(diff_files):
+        "Parse the output of filenames_diff_cmd"
+        return diff_files.splitlines()
+
+
+radii = {'git': RadiusGit, 'hg': RadiusHg, 'bzr': RadiusBzr}
 
 
 def using_git():
@@ -535,9 +565,17 @@ def using_hg():
         return False
 
 
+def using_bzr():
+    try:
+        bzr_log = check_output(["bzr", "log"], stderr=STDOUT)
+        return True
+    except (CalledProcessError, OSError):
+        return False
+
+
 def which_version_control():  # pragma: no cover
     """Try to see if they are using git or hg.
-    return git, hg or raise NotImplementedError.
+    return git, hg, bzr or raise NotImplementedError.
 
     """
     if using_git():
@@ -545,6 +583,9 @@ def which_version_control():  # pragma: no cover
 
     if using_hg():
         return 'hg'
+
+    if using_bzr():
+        return 'bzr'
 
     # Not supported (yet)
     raise NotImplementedError("Unknown version control system. "

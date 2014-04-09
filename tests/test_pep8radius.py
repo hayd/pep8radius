@@ -312,5 +312,37 @@ class TestRadiusHg(TestRadius, MixinTests):
         except (OSError, CalledProcessError):
             return False
 
+
+class TestRadiusBzr(TestRadius, MixinTests):
+    vc = 'bzr'
+
+    @staticmethod
+    def delete_repo():
+        try:
+            rmtree(os.path.join(TEMP_DIR, '.bzr'))
+        except OSError:
+            pass
+
+    @staticmethod
+    def create_repo():
+        os.chdir(TEMP_DIR)
+        try:
+            check_output(["bzr", "init"], stderr=STDOUT)
+            return True
+        except (OSError, CalledProcessError):
+            return False
+
+    @staticmethod
+    def successfully_commit_files(file_names,
+                                  commit="initial_commit"):
+        os.chdir(TEMP_DIR)
+        try:
+            check_output(["bzr", "add"] + file_names, stderr=STDOUT)
+            check_output(["bzr", "commit", "-m", commit], stderr=STDOUT)
+            return True
+        except (OSError, CalledProcessError):
+            return False
+
+
 if __name__ == '__main__':
     main()
