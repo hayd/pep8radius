@@ -1,7 +1,7 @@
 pep8radius
 ----------
 
-[PEP8](http://legacy.python.org/dev/peps/pep-0008/) clean only the parts of the files which you have touched since the last commit, previous commit or branch.
+[PEP8](http://legacy.python.org/dev/peps/pep-0008/) clean only the parts of the files touched since the last commit, a previous commit or branch.
 
 [![Current PyPi Version](http://img.shields.io/pypi/v/pep8radius.svg)](https://pypi.python.org/pypi/pep8radius)
 [![MIT licensed](http://img.shields.io/badge/license-MIT-brightgreen.svg)](http://choosealicense.com/licenses/mit/)
@@ -22,11 +22,11 @@ $ pip install pep8radius
 
 Requirements
 ------------
-pep8radius requires [autopep8](https://pypi.python.org/pypi/autopep8), which in turn requires [pep8](https://pypi.python.org/pypi/pep8). It also requires a version control system installed on your system...
+pep8radius requires [autopep8](https://pypi.python.org/pypi/autopep8), which in turn requires [pep8](https://pypi.python.org/pypi/pep8). The docformatter option, to fix docstrings, requires [docformatter](https://pypi.python.org/pypi/docformatter).
 
 VCS Support
 -----------
-[Git](http://git-scm.com/) and [Mecurial (hg)](http://mercurial.selenic.com/). Please request support for other version control systems on [github](https://github.com/hayd/pep8radius).
+[Git](http://git-scm.com/) and [Mecurial (hg)](http://mercurial.selenic.com/), please request support for other version control systems on [github](https://github.com/hayd/pep8radius/issues/5).
 
 Usage
 -----
