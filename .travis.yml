@@ -7,15 +7,12 @@ python:
     - "3.2"
     - "3.3"
 env:
-  - AUTOPEP8_VERSION=latest
-  - AUTOPEP8_VERSION=master
-matrix:
-  allow_failures:
-    - env: AUTOPEP8_VERSION=latest
+  - AUTOPEP8_VERSION=pypi
+  - AUTOPEP8_VERSION=git
 
 install:
     - if [ "$TRAVIS_PYTHON_VERSION" == "2.6" ]; then pip --quiet install argparse unittest2; fi
-    - if [ "$AUTOPEP8_VERSION" == "master" ]; then pip --quiet install git+git://github.com/hhatto/autopep8.git; fi
+    - if [ "$AUTOPEP8_VERSION" == "git" ]; then pip --quiet install git+git://github.com/hhatto/autopep8.git; fi
     - python setup.py --quiet build --build-base=".build-$TRAVIS_PYTHON_VERSION" install
     - pip install --quiet pytest-cov
     - git config --global user.email "you@example.com"
