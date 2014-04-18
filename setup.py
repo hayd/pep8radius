@@ -28,9 +28,9 @@ def readme():
             return f.read()
 
 INSTALL_REQUIRES = (
-    ['autopep8'] +
+    ['autopep8 >= 1.0.1'] +
     (['argparse'] if version_info < (2, 7) else []) +
-    ['docformatter  >= 0.6']
+    ['docformatter >= 0.6']
 )
 
 setup(
