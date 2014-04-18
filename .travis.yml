@@ -13,14 +13,14 @@ env:
 install:
     - if [ "$TRAVIS_PYTHON_VERSION" == "2.6" ]; then pip --quiet install argparse unittest2; fi
     - if [ "$AUTOPEP8_VERSION" == "git" ]; then pip --quiet install git+git://github.com/hhatto/autopep8.git; fi
-    - python setup.py --quiet build --build-base=".build-$TRAVIS_PYTHON_VERSION" install
+    - python setup.py install --quiet
     - pip install --quiet pytest-cov
     - git config --global user.email "you@example.com"
     - git config --global user.name "Your Name"
     - echo -e "[ui]\nusername = Your Name <your@email.com>" > ~/.hgrc
 
 script:
-    - py.test pep8radius/test_pep8radius.py --cov=pep8radius
+    - py.test tests/test_pep8radius.py --cov=pep8radius
 
 after_success:
     - pip install --quiet coveralls

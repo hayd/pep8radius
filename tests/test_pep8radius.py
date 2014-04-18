@@ -2,11 +2,11 @@ from __future__ import absolute_import
 import autopep8
 from contextlib import contextmanager
 import os
-from pep8radius.pep8radius import (Radius, RadiusGit, RadiusHg,
-                                   check_output, parse_args,
-                                   which_version_control,
-                                   using_git, using_hg,
-                                   version, get_diff)
+from pep8radius import (Radius, RadiusGit, RadiusHg,
+                        check_output, parse_args,
+                        which_version_control,
+                        using_git, using_hg,
+                        version, get_diff)
 from shutil import rmtree
 from subprocess import CalledProcessError, STDOUT
 import sys
@@ -21,8 +21,9 @@ if sys.version_info < (2, 7):
 else:
     from unittest import main, SkipTest, TestCase
 
-PEP8RADIUS = os.path.join(os.path.abspath(os.path.dirname(__file__)),
-                          'pep8radius.py')
+
+ROOT_DIR = os.path.split(os.path.abspath(os.path.dirname(__file__)))[0]
+PEP8RADIUS = os.path.join(ROOT_DIR, 'pep8radius.py')
 
 TEMP_DIR = os.path.join(os.path.abspath(os.path.dirname(__file__)),
                         'temp')
@@ -54,6 +55,9 @@ class TestRadiusNoVCS(TestCase):
     def __init__(self, *args, **kwargs):
         self.original_dir = os.getcwd()
         super(TestRadiusNoVCS, self).__init__(*args, **kwargs)
+
+    def setUp(self):
+        os.chdir(TEMP_DIR)
 
     def tearDown(self):
         os.chdir(self.original_dir)
