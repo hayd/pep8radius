@@ -391,7 +391,7 @@ def get_diff(original, fixed, file_name,
                         file_name + '/' + original_label,
                         file_name + '/' + fixed_label,
                         lineterm=newline)
-    text = newline
+    text = ''
     for line in diff:
         text += line
         # Work around missing newline (http://bugs.python.org/issue2142).
