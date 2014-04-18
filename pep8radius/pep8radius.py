@@ -11,7 +11,6 @@ import signal
 import subprocess
 from subprocess import STDOUT, CalledProcessError
 import sys
-from sys import exit
 
 try:
     from StringIO import StringIO
@@ -70,24 +69,24 @@ def main():
         # main
         if args.version:
             print(version)
-            exit(0)
+            sys.exit(0)
 
         if args.list_fixes:
             for code, description in sorted(autopep8.supported_fixes()):
                 print('{code} - {description}'.format(
                     code=code, description=description))
-            exit(0)
+            sys.exit(0)
 
         try:
             r = Radius.new(rev=args.rev, options=args)
         except NotImplementedError as e:  # pragma: no cover
-            print(e.message)
-            exit(1)
+            print(e)
+            sys.exit(1)
         except CalledProcessError as c:  # pragma: no cover
             # cut off usage of git diff and exit
             output = c.output.splitlines()[0]
             print(output)
-            exit(c.returncode)
+            sys.exit(c.returncode)
 
         r.pep8radius()
 
@@ -117,9 +116,13 @@ def parse_args(arguments=None):
                         help='print verbose messages; '
                         'multiple -v result in more verbose messages')
     parser.add_argument('-d', '--diff', action='store_true', dest='diff',
-                        help='print the diff for the fixed source')
+                        help='print the diff of fixed source vs original')
     parser.add_argument('-i', '--in-place', action='store_true',
                         help="make the changes in place")
+    parser.add_argument('-f', '--docformatter', action='store_true',
+                        help='fix docstrings for PEP257 using docformatter')
+
+    # autopep8 options
     parser.add_argument('-p', '--pep8-passes', metavar='n',
                         default=-1, type=int,
                         help='maximum number of additional pep8 passes '
@@ -147,9 +150,7 @@ def parse_args(arguments=None):
                         type=int, metavar='n',
                         help='number of spaces per indent level '
                              '(default %(default)s)')
-    # docformatter
-    parser.add_argument('--docformatter', action='store_true',
-                        help='fix docstrings for PEP257 using docformatter')
+    # docformatter options
     parser.add_argument('--no-blank', dest='post_description_blank',
                         action='store_false',
                         help='do not add blank line after description; '
