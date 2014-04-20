@@ -49,7 +49,7 @@ if "check_output" not in dir(subprocess):  # pragma: no cover
 check_output = subprocess.check_output
 
 
-__version__ = version = '0.7b'
+__version__ = version = '0.7'
 
 
 DEFAULT_IGNORE = 'E24'

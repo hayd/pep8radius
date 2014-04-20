@@ -74,6 +74,7 @@ optional arguments:
                         verbose messages (passed to autopep8)
   -d, --diff            print the diff for the fixed source
   -i, --in-place        make the changes in place
+  -f, --docformatter    fix docstrings for PEP257 using docformatter
   -p n, --pep8-passes n
                         maximum number of additional pep8 passes (default:
                         infinite)
@@ -87,7 +88,6 @@ optional arguments:
   --select errors       fix only these errors/warnings (e.g. E4,W)
   --max-line-length n   set maximum allowed line length (default: 79)
   --indent-size n       number of spaces per indent level (default 4)
-  --docformatter        fix docstrings for PEP257 using docformatter
   --no-blank            do not add blank line after description; used by
                         docformatter
   --pre-summary-newline
