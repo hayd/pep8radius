@@ -2,13 +2,7 @@ from __future__ import absolute_import
 import autopep8
 from contextlib import contextmanager
 import os
-from pep8radius import (Radius, RadiusGit, RadiusHg,
-                        check_output, parse_args,
-                        which_version_control,
-                        using_git, using_hg,
-                        version, get_diff)
 from shutil import rmtree
-from subprocess import CalledProcessError, STDOUT
 import sys
 
 try:
@@ -23,6 +17,14 @@ else:
 
 
 ROOT_DIR = os.path.split(os.path.abspath(os.path.dirname(__file__)))[0]
+sys.path.insert(0, ROOT_DIR)
+from pep8radius import (Radius, RadiusGit, RadiusHg,
+                        check_output, CalledProcessError, STDOUT,
+                        parse_args,
+                        which_version_control,
+                        using_git, using_hg,
+                        version, get_diff)
+
 PEP8RADIUS = os.path.join(ROOT_DIR, 'pep8radius.py')
 
 TEMP_DIR = os.path.join(os.path.abspath(os.path.dirname(__file__)),
