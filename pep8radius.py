@@ -21,6 +21,7 @@ except ImportError:  # pragma: no cover
 if "check_output" not in dir(subprocess):  # pragma: no cover
     # duck punch it in!
     import subprocess
+
     def check_output(*popenargs, **kwargs):
         if 'stdout' in kwargs:  # pragma: no cover
             raise ValueError('stdout argument not allowed, it will be overridden.')
