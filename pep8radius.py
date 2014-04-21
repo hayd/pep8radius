@@ -1,6 +1,7 @@
 from __future__ import print_function
 import argparse
 import autopep8
+import colorama
 import docformatter
 from difflib import unified_diff
 from itertools import takewhile
@@ -24,27 +25,33 @@ if "check_output" not in dir(subprocess):  # pragma: no cover
 
     def check_output(*popenargs, **kwargs):
         if 'stdout' in kwargs:  # pragma: no cover
-            raise ValueError('stdout argument not allowed, it will be overridden.')
-        process = subprocess.Popen(stdout=subprocess.PIPE, *popenargs, **kwargs)
+            raise ValueError('stdout argument not allowed, '
+                             'it will be overridden.')
+        process = subprocess.Popen(stdout=subprocess.PIPE,
+                                   *popenargs, **kwargs)
         output, unused_err = process.communicate()
         retcode = process.poll()
         if retcode:
             cmd = kwargs.get("args")
             if cmd is None:
                 cmd = popenargs[0]
-            raise subprocess.CalledProcessError(retcode, cmd, output=output)
+            raise subprocess.CalledProcessError(retcode, cmd,
+                                                output=output)
         return output
     subprocess.check_output = check_output
 
     class CalledProcessError(Exception):
+
         def __init__(self, returncode, cmd, output=None):
             self.returncode = returncode
             self.cmd = cmd
             self.output = output
+
         def __str__(self):
             return "Command '%s' returned non-zero exit status %d" % (
                 self.cmd, self.returncode)
-    # overwrite CalledProcessError due to `output` keyword might be not available
+    # overwrite CalledProcessError due to `output`
+    # keyword not being available (in 2.6)
     subprocess.CalledProcessError = CalledProcessError
 check_output = subprocess.check_output
 
@@ -57,7 +64,7 @@ DEFAULT_INDENT_SIZE = 4
 
 
 def main():
-    try: # pragma: no cover
+    try:  # pragma: no cover
         # Exit on broken pipe.
         signal.signal(signal.SIGPIPE, signal.SIG_DFL)
     except AttributeError:  # pragma: no cover
@@ -262,7 +269,7 @@ class Radius:
 
         if self.diff:
             for diff in pep8_diffs:
-                print(diff)
+                self.print_diff(diff)
 
     def pep8radius_file(self, file_name):
         """Apply autopep8 to the diff lines of a file.
@@ -330,7 +337,7 @@ class Radius:
         root_dir = self.root_dir()
         py_files_full = [os.path.join(root_dir,
                                       file_name)
-                            for file_name in py_files]
+                         for file_name in py_files]
 
         return list(py_files_full)
 
@@ -343,6 +350,21 @@ class Radius:
         if min_ <= self.verbose <= max_:
             print(something_to_print, end=end)
             sys.stdout.flush()
+
+    def print_diff(self, diff):
+        if self.diff and diff:
+            colorama.init(autoreset=True)  # TODO use context_manager
+            for line in diff.splitlines():
+                if line.startswith('+') and not line.startswith('+++ '):
+                    print(colorama.Fore.GREEN + line)
+                elif line.startswith('-') and not line.startswith('--- '):
+                    # Note there shouldn't be trailing whitespace
+                    # but may be nice to generalise this
+                    # (e.g. give trailing whitespace a RED background)
+                    print(colorama.Fore.RED + line)
+                else:
+                    print(line)
+            colorama.deinit()
 
 
 # #####   udiff parsing   #####
