@@ -13,10 +13,6 @@ import subprocess
 from subprocess import STDOUT, CalledProcessError
 import sys
 
-try:
-    from StringIO import StringIO
-except ImportError:  # pragma: no cover
-    from io import StringIO
 
 # python 2.6 doesn't include check_output
 if "check_output" not in dir(subprocess):  # pragma: no cover
@@ -445,7 +441,7 @@ class RadiusGit(Radius):
 
     @staticmethod
     def current_branch():
-        output = check_output(["git", "symbolic-ref", "--short", "HEAD"])
+        output = check_output(["git", "rev-parse", "--abbrev-ref", "HEAD"])
         return output.strip().decode('utf-8')
 
     @staticmethod
