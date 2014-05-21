@@ -86,10 +86,10 @@ class TestRadiusNoVCS(TestCase):
         TestRadiusHg.delete_repo()
 
         self.assertFalse(using_hg())
-        TestRadiusHg.create_repo()
-        self.assertTrue(using_hg())
+        if TestRadiusHg.create_repo():
+            self.assertTrue(using_hg())
 
-        # again, git is already seen before this
+        # git is seen before this, as the dir above is git!
         self.assertTrue(using_git())
 
     def test_autopep8_args(self):
@@ -159,6 +159,9 @@ class TestRadius(TestCase):
 
         options = parse_args(options)
 
+        # TODO remove this color hack, and actually test printing color diff
+        options.no_color = True
+
         with open(temp_file, 'w') as f:
             f.write(original)
         committed = self.successfully_commit_files([temp_file],
@@ -181,7 +184,7 @@ class TestRadius(TestCase):
             r.pep8radius()
         exp_diff = get_diff(modified, expected, temp_file)
         # last char in getvalue is an additional new line
-        self.assertEqual(exp_diff, out.getvalue()[:-1])
+        self.assert_equal(out.getvalue()[:-1], exp_diff, test_name)
         options.diff = False
 
 

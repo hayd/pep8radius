@@ -129,6 +129,8 @@ def parse_args(arguments=None):
                         help="make the changes in place")
     parser.add_argument('-f', '--docformatter', action='store_true',
                         help='fix docstrings for PEP257 using docformatter')
+    parser.add_argument('--no-color', action='store_false',
+                        help='do not print diffs in color')
 
     # autopep8 options
     parser.add_argument('-p', '--pep8-passes', metavar='n',
@@ -208,6 +210,7 @@ class Radius:
         self.verbose = self.options.verbose
         self.in_place = self.options.in_place
         self.diff = self.options.diff
+        self.color = not self.options.no_color
 
         # autopep8 specific options
         self.options.verbose = max(0, self.options.verbose - 1)
@@ -269,7 +272,7 @@ class Radius:
 
         if self.diff:
             for diff in pep8_diffs:
-                self.print_diff(diff)
+                self.print_diff(diff, color=self.color)
 
     def pep8radius_file(self, file_name):
         """Apply autopep8 to the diff lines of a file.
@@ -351,17 +354,28 @@ class Radius:
             print(something_to_print, end=end)
             sys.stdout.flush()
 
-    def print_diff(self, diff):
+    def print_diff(self, diff, color=True):
         if self.diff and diff:
+
+            if not color:
+                print(diff)
+                return
+
             colorama.init(autoreset=True)  # TODO use context_manager
             for line in diff.splitlines():
                 if line.startswith('+') and not line.startswith('+++ '):
-                    print(colorama.Fore.GREEN + line)
-                elif line.startswith('-') and not line.startswith('--- '):
                     # Note there shouldn't be trailing whitespace
                     # but may be nice to generalise this
-                    # (e.g. give trailing whitespace a RED background)
-                    print(colorama.Fore.RED + line)
+                    print(colorama.Fore.GREEN + line)
+                elif line.startswith('-') and not line.startswith('--- '):
+                    split_whitespace = re.split('(\s+)$', line)
+                    if len(split_whitespace) > 1:  # claim it must be 3
+                        line, trailing, _ = split_whitespace
+                    else:
+                        line, trailing = split_whitespace[0], ''
+                    print(colorama.Fore.RED + line, end='')
+                    # give trailing whitespace a RED background
+                    print(colorama.Back.RED + trailing)  
                 else:
                     print(line)
             colorama.deinit()
