@@ -425,8 +425,8 @@ def get_diff(original, fixed, file_name,
     original, fixed = original.splitlines(True), fixed.splitlines(True)
     newline = '\n'
     diff = unified_diff(original, fixed,
-                        file_name + '/' + original_label,
-                        file_name + '/' + fixed_label,
+                        os.path.join(file_name, original_label),
+                        os.path.join(file_name, fixed_label), 
                         lineterm=newline)
     text = ''
     for line in diff:
