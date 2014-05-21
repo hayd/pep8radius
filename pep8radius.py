@@ -129,7 +129,7 @@ def parse_args(arguments=None):
                         help="make the changes in place")
     parser.add_argument('-f', '--docformatter', action='store_true',
                         help='fix docstrings for PEP257 using docformatter')
-    parser.add_argument('--no-color', action='store_false',
+    parser.add_argument('--no-color', action='store_true',
                         help='do not print diffs in color')
 
     # autopep8 options
