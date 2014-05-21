@@ -63,7 +63,7 @@ DEFAULT_IGNORE = 'E24'
 DEFAULT_INDENT_SIZE = 4
 
 
-def main():
+def main(args=None):
     try:  # pragma: no cover
         # Exit on broken pipe.
         signal.signal(signal.SIGPIPE, signal.SIG_DFL)
@@ -71,9 +71,10 @@ def main():
         # SIGPIPE is not available on Windows.
         pass
 
-    try:
+    if args is None:
         args = parse_args(sys.argv[1:])
 
+    try:
         # main
         if args.version:
             print(version)
@@ -444,13 +445,14 @@ class RadiusGit(Radius):
 
     @staticmethod
     def current_branch():
-        output = check_output(["git", "rev-parse", "--abbrev-ref", "HEAD"])
+        output = check_output(["git", "symbolic-ref", "--short", "HEAD"])
         return output.strip().decode('utf-8')
 
     @staticmethod
     def root_dir():
         output = check_output(['git', 'rev-parse', '--show-toplevel'])
-        return output.strip().decode('utf-8')
+        root = output.strip().decode('utf-8')
+        return os.path.normpath(root)
 
     def file_diff_cmd(self, f):
         "Get diff for one file, f"
