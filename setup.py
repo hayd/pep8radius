@@ -18,6 +18,7 @@ def version():
             if line.startswith('__version__'):
                 return parse(line).body[0].value.s
 
+
 def readme():
     try:
         import pypandoc
@@ -30,7 +31,8 @@ INSTALL_REQUIRES = (
     ['autopep8 >= 1.0.2'] +
     (['argparse'] if version_info < (2, 7) else []) +
     ['colorama'] +
-    ['docformatter >= 0.6.1']
+    ['docformatter >= 0.6.1'],
+    ['multiprocessing']
 )
 
 setup(

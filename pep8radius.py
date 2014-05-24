@@ -6,6 +6,7 @@ import docformatter
 from difflib import unified_diff
 from itertools import takewhile
 import glob
+from multiprocessing import Manager, Process
 import os
 import re
 import signal
@@ -129,6 +130,10 @@ def parse_args(arguments=None):
     parser.add_argument('--no-color', action='store_true',
                         help='do not print diffs in color')
 
+    parser.add_argument('-j', '--jobs', type=int, metavar='n', default=0,
+                        help='number of parallel jobs; '
+                        'match CPU count if value is less than 1')
+
     # autopep8 options
     parser.add_argument('-p', '--pep8-passes', metavar='n',
                         default=-1, type=int,
@@ -246,19 +251,39 @@ class Radius:
 
         self.p('Applying autopep8 to touched lines in %s file(s).' % n)
 
-        total_lines_changed = 0
-        pep8_diffs = []
-        for i, file_name in enumerate(self.filenames_diff, start=1):
-            self.p('%s/%s: %s: ' % (i, n, file_name), end='')
-            self.p('', min_=2)
+        mgr = Manager()
+        lines_changed = mgr.list()
+        pep8_diffs = mgr.list()
 
+        def pep8_fix(file_name,
+                     lines_changed=lines_changed,
+                     pep8_diffs=pep8_diffs):
             p_diff = self.pep8radius_file(file_name)
-            lines_changed = udiff_lines_fixed(p_diff) if p_diff else 0
-            total_lines_changed += lines_changed
-            self.p('fixed %s lines.' % lines_changed, max_=1)
 
+            lines_changed += [udiff_lines_fixed(p_diff)
+                              if p_diff
+                              else 0]
             if p_diff and self.diff:
-                pep8_diffs.append(p_diff)
+                pep8_diffs += [p_diff]
+
+        if True:
+            self.verbose, verbose = 0, self.verbose
+            procs = [Process(target=pep8_fix, args=(file_name,))
+                     for file_name in self.filenames_diff]
+            for p in procs:
+                p.start()
+            for p in procs:
+                p.join()
+            self.verbose = verbose
+
+        else:
+            for i, file_name in enumerate(self.filenames_diff, start=1):
+                self.p('%s/%s: %s: ' % (i, n, file_name), end='')
+                self.p('', min_=2)
+                pep8_fix(file_name)
+                self.p('fixed %s lines.' % lines_changed, max_=1)
+
+        total_lines_changed = sum(lines_changed)
 
         if self.in_place:
             self.p('pep8radius fixed %s lines in %s files.'
