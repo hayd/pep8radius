@@ -32,7 +32,6 @@ INSTALL_REQUIRES = (
     (['argparse'] if version_info < (2, 7) else []) +
     ['colorama'] +
     ['docformatter >= 0.6.1'],
-    ['multiprocessing']
 )
 
 setup(
