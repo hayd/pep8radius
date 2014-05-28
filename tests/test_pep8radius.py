@@ -95,10 +95,15 @@ class TestRadiusNoVCS(TestCase):
     def test_using_vc(self):
         TestRadiusGit.delete_repo()
         TestRadiusHg.delete_repo()
+        TestRadiusBzr.delete_repo()
 
         self.assertFalse(using_hg())
         if TestRadiusHg.create_repo():
             self.assertTrue(using_hg())
+
+        self.assertFalse(using_bzr())
+        if TestRadiusBzr.create_repo():
+            self.assertTrue(using_bzr())
 
         # git is seen before this, as the dir above is git!
         self.assertTrue(using_git())
