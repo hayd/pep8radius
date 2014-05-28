@@ -184,8 +184,7 @@ class TestRadius(TestCase):
         with captured_output() as (out, err):
             r.pep8radius()
         exp_diff = get_diff(modified, expected, temp_file)
-        # last char in getvalue is an additional new line
-        self.assert_equal(out.getvalue()[:-1], exp_diff, test_name)
+        self.assert_equal(out.getvalue(), exp_diff, test_name)
         options.diff = False
 
         options.in_place = True
