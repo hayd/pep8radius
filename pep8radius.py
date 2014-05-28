@@ -372,7 +372,7 @@ class Radius:
                         line, trailing = split_whitespace[0], ''
                     print(colorama.Fore.RED + line, end='')
                     # give trailing whitespace a RED background
-                    print(colorama.Back.RED + trailing)  
+                    print(colorama.Back.RED + trailing)
                 else:
                     print(line)
             colorama.deinit()
@@ -423,7 +423,7 @@ def get_diff(original, fixed, file_name,
     newline = '\n'
     diff = unified_diff(original, fixed,
                         os.path.join(file_name, original_label),
-                        os.path.join(file_name, fixed_label), 
+                        os.path.join(file_name, fixed_label),
                         lineterm=newline)
     text = ''
     for line in diff:

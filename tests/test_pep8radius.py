@@ -101,7 +101,8 @@ class TestRadiusNoVCS(TestCase):
         self.assertEqual(us.select, them.select)
         self.assertEqual(us.ignore, them.ignore)
 
-        args = ['hello.py', '--select=E1,W1', '--ignore=W601', '--max-line-length', '120']
+        args = ['hello.py', '--select=E1,W1', '--ignore=W601',
+                '--max-line-length', '120']
         us = parse_args(args)
         them = autopep8.parse_args(args)
         self.assertEqual(us.select, them.select)
@@ -187,7 +188,6 @@ class TestRadius(TestCase):
         self.assert_equal(out.getvalue()[:-1], exp_diff, test_name)
         options.diff = False
 
-
         options.in_place = True
         r = Radius.new(vc=self.vc, options=options)
         # Run pep8radius
@@ -225,13 +225,14 @@ class MixinTests:
         original = 'def poor_indenting():\n  a = 1\n  b = 2\n  return a + b\n\nfoo = 1; bar = 2; print(foo * bar)\na=1; b=2; c=3\nd=7\n\ndef f(x = 1, y = 2):\n    return x + y\n'
         modified = 'def poor_indenting():\n  a = 1\n  b = 2\n  return a + b\n\nfoo = 1; bar = 2; print(foo * bar)\na=1; b=42; c=3\nd=7\n\ndef f(x = 1, y = 2):\n    return x + y\n'
         expected = 'def poor_indenting():\n  a = 1\n  b = 2\n  return a + b\n\nfoo = 1; bar = 2; print(foo * bar)\na = 1\nb = 42\nc = 3\nd=7\n\ndef f(x = 1, y = 2):\n    return x + y\n'
-        self.check(original, modified, expected, 'test_one_line', directory=SUBTEMP_DIR)
+        self.check(original, modified, expected, 'test_one_line',
+                   directory=SUBTEMP_DIR)
 
     def test_with_docformatter(self):
         original = 'def poor_indenting():\n  """       Great function"""\n  a = 1\n  b = 2\n  return a + b\n\n\n\nfoo = 1; bar = 2; print(foo * bar)\na=1; b=2; c=3\nd=7\n\ndef f(x = 1, y = 2):\n    return x + y\n'
         modified = 'def poor_indenting():\n  """  Very great function"""\n  a = 1\n  b = 2\n  return a + b\n\n\n\nfoo = 1; bar = 2; print(foo * bar)\na=1; b=42; c=3\nd=7\n\ndef f(x = 1, y = 2):\n    return x + y\n'
         expected = 'def poor_indenting():\n  """  Very great function"""\n  a = 1\n  b = 2\n  return a + b\n\n\n\nfoo = 1; bar = 2; print(foo * bar)\na = 1\nb = 42\nc = 3\nd=7\n\ndef f(x = 1, y = 2):\n    return x + y\n'
-        self.check(original, modified, expected, 'test_with_docformatter',)
+        self.check(original, modified, expected, 'test_with_docformatter')
 
         expected = 'def poor_indenting():\n  """Very great function."""\n  a = 1\n  b = 2\n  return a + b\n\n\n\nfoo = 1; bar = 2; print(foo * bar)\na = 1\nb = 42\nc = 3\nd=7\n\ndef f(x = 1, y = 2):\n    return x + y\n'
         self.check(original, modified, expected,
