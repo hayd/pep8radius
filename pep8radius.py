@@ -505,7 +505,7 @@ def using_git():
     try:
         git_log = check_output(["git", "log"], stderr=STDOUT)
         return True
-    except (CalledProcessError, OSError):
+    except (CalledProcessError, OSError):  # pragma: no cover
         return False
 
 
@@ -517,7 +517,7 @@ def using_hg():
         return False
 
 
-def which_version_control():
+def which_version_control():  # pragma: no cover
     """Try to see if they are using git or hg.
     return git, hg or raise NotImplementedError.
 
@@ -533,5 +533,5 @@ def which_version_control():
                               "Ensure you're in the project directory.")
 
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no cover
     main()

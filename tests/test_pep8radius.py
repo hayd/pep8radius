@@ -20,6 +20,7 @@ ROOT_DIR = os.path.split(os.path.abspath(os.path.dirname(__file__)))[0]
 sys.path.insert(0, ROOT_DIR)
 from pep8radius import (Radius, RadiusGit, RadiusHg,
                         check_output, CalledProcessError, STDOUT,
+                        main,
                         parse_args,
                         which_version_control,
                         using_git, using_hg,
@@ -50,6 +51,16 @@ def captured_output():
         yield sys.stdout, sys.stderr
     finally:
         sys.stdout, sys.stderr = old_out, old_err
+
+def pep8radius_main(args):
+    if isinstance(args, list):
+        args = parse_args(args)
+    with captured_output() as (out, err):
+        try:
+            main(args)
+        except SystemExit:
+            pass
+    return out.getvalue().strip()
 
 
 class TestRadiusNoVCS(TestCase):
@@ -115,13 +126,13 @@ class TestRadiusNoVCS(TestCase):
         self.assertEqual(us.aggressive, them.aggressive)
 
     def test_version_number(self):
-        version_ = check_output(['python', PEP8RADIUS, '--version'])
-        version_ = version_.decode('utf-8').strip()
+        version_ = pep8radius_main(['--version'])
         self.assertEqual(version_, version)
 
     def test_list_fixes(self):
-        fixes = check_output(['python', PEP8RADIUS, '--list-fixes'])
-        afixes = check_output(['autopep8', '--list-fixes'])
+        fixes = pep8radius_main(['--list-fixes'])
+        afixes = check_output(['autopep8', '--list-fixes'])\
+                   .decode("utf-8").strip()
         self.assertEqual(fixes, afixes)
 
     def test_bad_rev(self):
@@ -197,7 +208,9 @@ class TestRadius(TestCase):
         self.assert_equal(result, expected, test_name)
 
         # Run pep8radius again, it *should* be that this doesn't do anything.
-        r.pep8radius()
+        with captured_output() as (out, err):
+            pep8radius_main(options)
+        self.assertEqual(out.getvalue(), '')
 
         with open(temp_file, 'r') as f:
             result = f.read()
