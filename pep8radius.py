@@ -52,7 +52,7 @@ if "check_output" not in dir(subprocess):  # pragma: no cover
 check_output = subprocess.check_output
 
 
-__version__ = version = '0.8'
+__version__ = version = '0.8.1'
 
 
 DEFAULT_IGNORE = 'E24'
@@ -202,7 +202,7 @@ class Radius:
 
     def __init__(self, rev=None, options=None):
         # pep8radius specific options
-        self.rev = rev if rev is not None else self.current_branch()
+        self.rev = self._branch_point(rev)
         self.options = options if options else parse_args([''])
         self.verbose = self.options.verbose
         self.in_place = self.options.in_place
@@ -321,10 +321,8 @@ class Radius:
         cmd = self.filenames_diff_cmd()
 
         # Note: This may raise a CalledProcessError
-        diff_files_b = check_output(cmd, stderr=STDOUT)
-
-        diff_files_u = diff_files_b.decode('utf-8')
-        diff_files = self.parse_diff_filenames(diff_files_u)
+        diff_files = check_output(cmd, stderr=STDOUT).decode('utf-8')
+        diff_files = self.parse_diff_filenames(diff_files)
 
         py_files = set(f for f in diff_files if f.endswith('.py'))
 
@@ -377,9 +375,19 @@ class Radius:
                 print(colorama.Fore.RED + line, end='')
                 # give trailing whitespace a RED background
                 print(colorama.Back.RED + trailing)
+            elif line == '\ No newline at end of file':
+                # The assumption here is that there is now a new line...
+                print(colorama.Fore.RED + line)
             else:
                 print(line)
         colorama.deinit()
+
+    def _branch_point(self, rev=None):
+        current = self.current_branch()
+        if rev is None:
+            return current
+        else:
+            return self.merge_base(rev, current)
 
 
 # #####   udiff parsing   #####
@@ -454,6 +462,11 @@ class RadiusGit(Radius):
         root = output.strip().decode('utf-8')
         return os.path.normpath(root)
 
+    @staticmethod
+    def merge_base(rev1, rev2):
+        output = check_output(['git', 'merge-base', rev1, rev2])
+        return output.strip().decode('utf-8')
+
     def file_diff_cmd(self, f):
         "Get diff for one file, f"
         return ['git', 'diff', self.rev, f]
@@ -480,13 +493,18 @@ class RadiusHg(Radius):
         output = check_output(['hg', 'root'])
         return output.strip().decode('utf-8')
 
+    @staticmethod
+    def merge_base(rev1, rev2):
+        output = check_output(['hg', 'debugancestor', rev1, rev2])
+        return output.strip().decode('utf-8').split(':')[1]
+
     def file_diff_cmd(self, f):
         "Get diff for one file, f"
         return ['hg', 'diff', '-r', self.rev, f]
 
     def filenames_diff_cmd(self):
         "Get the names of the py files in diff"
-        return ["hg", "diff", "--stat", "-c", self.rev]
+        return ["hg", "diff", "--stat", "-r", self.rev]
 
     @staticmethod
     def parse_diff_filenames(diff_files):
