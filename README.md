@@ -26,7 +26,7 @@ pep8radius requires [autopep8](https://pypi.python.org/pypi/autopep8), which in 
 
 VCS Support
 -----------
-[Git](http://git-scm.com/) and [Mecurial (hg)](http://mercurial.selenic.com/), please request support for other version control systems on [github](https://github.com/hayd/pep8radius/issues/5).
+[Git](http://git-scm.com/), [Mecurial (hg)](http://mercurial.selenic.com/), [Bazaar](http://bazaar.canonical.com/en/). Please request support for other version control systems on [github](https://github.com/hayd/pep8radius/issues/5).
 
 Usage
 -----

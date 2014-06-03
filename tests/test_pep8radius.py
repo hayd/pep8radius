@@ -23,7 +23,7 @@ from pep8radius import (Radius, RadiusGit, RadiusHg,
                         main,
                         parse_args,
                         which_version_control,
-                        using_git, using_hg,
+                        using_git, using_hg, using_bzr,
                         version, get_diff)
 
 PEP8RADIUS = os.path.join(ROOT_DIR, 'pep8radius.py')
@@ -52,12 +52,12 @@ def captured_output():
     finally:
         sys.stdout, sys.stderr = old_out, old_err
 
-def pep8radius_main(args):
+def pep8radius_main(args, vc=None):
     if isinstance(args, list):
         args = parse_args(args)
     with captured_output() as (out, err):
         try:
-            main(args)
+            main(args, vc=vc)
         except SystemExit:
             pass
     return out.getvalue().strip()
@@ -140,11 +140,6 @@ class TestRadiusNoVCS(TestCase):
                    .decode("utf-8").strip()
         self.assertEqual(fixes, afixes)
 
-    def test_bad_rev(self):
-        self.assertRaises(CalledProcessError,
-                          lambda x: Radius.new(rev=x),
-                          'random_junk_sha')
-
 
 class TestRadius(TestCase):
 
@@ -160,8 +155,18 @@ class TestRadius(TestCase):
         os.chdir(TEMP_DIR)
         self.delete_repo()
         success = self.create_repo()
+        self._save_file('a=1;', 'a.py')
+        committed = self.successfully_commit_files(['a.py'])
         os.chdir(self.original_dir)
         return success
+
+    def setUp(self):
+        os.chdir(TEMP_DIR)
+
+    @staticmethod
+    def _save_file(contents, f):
+        with open(f, 'w') as f1:
+            f1.write(contents)
 
     def check(self, original, modified, expected,
               test_name='check', options=None,
@@ -214,7 +219,7 @@ class TestRadius(TestCase):
 
         # Run pep8radius again, it *should* be that this doesn't do anything.
         with captured_output() as (out, err):
-            pep8radius_main(options)
+            pep8radius_main(options, vc=self.vc)
         self.assertEqual(out.getvalue(), '')
 
         with open(temp_file, 'r') as f:
@@ -254,6 +259,15 @@ class MixinTests:
         expected = 'def poor_indenting():\n  """Very great function."""\n  a = 1\n  b = 2\n  return a + b\n\n\n\nfoo = 1; bar = 2; print(foo * bar)\na = 1\nb = 42\nc = 3\nd=7\n\ndef f(x = 1, y = 2):\n    return x + y\n'
         self.check(original, modified, expected,
                    'test_with_docformatter', ['--docformatter'])
+
+    def test_bad_rev(self):
+        os.chdir(TEMP_DIR)
+        # TODO for some reason this isn't capturing the output!
+        with captured_output() as (out, err):
+            self.assertRaises(CalledProcessError,
+                              lambda x: Radius.new(rev=x, vc=self.vc),
+                              'random_junk_sha')
+        os.chdir(self.original_dir)
 
 
 class TestRadiusGit(TestRadius, MixinTests):

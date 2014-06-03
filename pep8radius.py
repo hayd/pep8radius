@@ -51,15 +51,21 @@ if "check_output" not in dir(subprocess):  # pragma: no cover
     subprocess.CalledProcessError = CalledProcessError
 check_output = subprocess.check_output
 
+def check_output_ignore_exitcode(cmd, stderr=STDOUT):
+    try:
+        ret = check_output(cmd)
+    except CalledProcessError as c:
+        ret = c.output
+    return ret.decode('utf-8')
 
-__version__ = version = '0.8.1'
+__version__ = version = '0.8.2a'
 
 
 DEFAULT_IGNORE = 'E24'
 DEFAULT_INDENT_SIZE = 4
 
 
-def main(args=None):
+def main(args=None, vc=None):
     try:  # pragma: no cover
         # Exit on broken pipe.
         signal.signal(signal.SIGPIPE, signal.SIG_DFL)
@@ -83,12 +89,12 @@ def main(args=None):
             sys.exit(0)
 
         try:
-            r = Radius.new(rev=args.rev, options=args)
+            r = Radius.new(rev=args.rev, options=args, vc=vc)
         except NotImplementedError as e:  # pragma: no cover
             print(e)
             sys.exit(1)
         except CalledProcessError as c:  # pragma: no cover
-            # cut off usage of git diff and exit
+            # cut off usage and exit
             output = c.output.splitlines()[0]
             print(output)
             sys.exit(c.returncode)
@@ -279,10 +285,7 @@ class Radius:
         # We hope that a CalledProcessError would have already raised
         # during the init if it were going to raise here.
         cmd = self.file_diff_cmd(file_name)
-        try:
-            diff = check_output(cmd).decode('utf-8')
-        except CalledProcessError as c:
-            diff = (c.output).decode('utf-8')
+        diff = check_output_ignore_exitcode(cmd)
 
         with open(file_name, 'r') as f:
             original = f.read()
@@ -323,8 +326,7 @@ class Radius:
         "Get the py files which have been changed since rev"
         cmd = self.filenames_diff_cmd()
 
-        # Note: This may raise a CalledProcessError
-        diff_files = check_output(cmd, stderr=STDOUT).decode('utf-8')
+        diff_files = check_output_ignore_exitcode(cmd)
         diff_files = self.parse_diff_filenames(diff_files)
 
         py_files = set(f for f in diff_files if f.endswith('.py'))
@@ -335,6 +337,8 @@ class Radius:
                 py_files.difference_update(glob.fnmatch.filter(py_files,
                                                                pattern))
 
+        # This may raise a CalledProcessError,
+        # however it should already have been caught upon new.
         root_dir = self.root_dir()
         py_files_full = [os.path.join(root_dir,
                                       file_name)
@@ -524,7 +528,7 @@ class RadiusBzr(Radius):
 
     @staticmethod
     def current_branch():
-        output = check_output(["bzr", "nick"])
+        output = check_output(["bzr", "revno"])
         return output.strip().decode('utf-8')
 
     @staticmethod
@@ -532,18 +536,39 @@ class RadiusBzr(Radius):
         output = check_output(['bzr', 'root'])
         return output.strip().decode('utf-8')
 
+    @staticmethod
+    def merge_base(rev1, rev2):
+        # Note: find-merge-base just returns rev1 if rev2 is not found
+        # we assume that rev2 is a legitamate revision.
+        # the following raise a CalledProcessError if it's a bad revision
+        check_output(['bzr', 'log', '-c', rev1])
+
+        output = check_output_ignore_exitcode(['bzr', 'find-merge-base',
+                                              rev1, rev2])
+        # 'merge base is revision name@example.com-20140602232408-d3wspoer3m35'
+        return output.strip().rsplit(' ', 1)[1]
+
     def file_diff_cmd(self, f):
         "Get diff for one file, f"
-        return ['bzr', 'diff', f]  # TODO '-r', self.rev ?
+        return ['bzr', 'diff', f, '-r', self.rev]
 
     def filenames_diff_cmd(self):
         "Get the names of the py files in diff"
-        return ['bzr', 'ls', '-VR']  # TODO '--from-root', '-r', self.rev ?
+        # TODO Can we do this better (without parsing the entire diff?)
+        return ['bzr', 'status', '-S', '-r', self.rev]  # TODO '--from-root' ?
 
     @staticmethod
     def parse_diff_filenames(diff_files):
         "Parse the output of filenames_diff_cmd"
-        return diff_files.splitlines()
+        # ?   .gitignore
+        # M  0.txt
+        files = []
+        for line in diff_files.splitlines():
+            line = line.strip()
+            fn = re.findall('[^ ]+\s+(.*.py)', line)
+            if fn and not line.startswith('?'):
+                files.append(fn[0])
+        return files
 
 
 radii = {'git': RadiusGit, 'hg': RadiusHg, 'bzr': RadiusBzr}
@@ -588,8 +613,8 @@ def which_version_control():  # pragma: no cover
         return 'bzr'
 
     # Not supported (yet)
-    raise NotImplementedError("Unknown version control system. "
-                              "Ensure you're in the project directory.")
+    raise NotImplementedError("Unknown version control system, "
+                              "or you're in the project directory.")
 
 
 if __name__ == "__main__":  # pragma: no cover
