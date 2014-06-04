@@ -533,7 +533,7 @@ class RadiusBzr(Radius):
 
     @staticmethod
     def root_dir():
-        output = check_output(['bzr', 'root'])
+        output = check_output(['bzr', 'root'], stderr=STDOUT)
         return output.strip().decode('utf-8')
 
     @staticmethod

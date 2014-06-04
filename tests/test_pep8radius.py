@@ -18,7 +18,7 @@ else:
 
 ROOT_DIR = os.path.split(os.path.abspath(os.path.dirname(__file__)))[0]
 sys.path.insert(0, ROOT_DIR)
-from pep8radius import (Radius, RadiusGit, RadiusHg,
+from pep8radius import (Radius, RadiusGit, RadiusHg, RadiusBzr,
                         check_output, CalledProcessError, STDOUT,
                         main,
                         parse_args,
@@ -155,16 +155,20 @@ class TestRadius(TestCase):
         os.chdir(TEMP_DIR)
         self.delete_repo()
         success = self.create_repo()
-        self._save_file('a=1;', 'a.py')
-        committed = self.successfully_commit_files(['a.py'])
+        committed = self._save_and_commit('a=1;', 'a.py')
         os.chdir(self.original_dir)
         return success
 
     def setUp(self):
         os.chdir(TEMP_DIR)
 
+    @classmethod
+    def _save_and_commit(cls, contents, f):
+        cls._save(contents, f)
+        return cls.successfully_commit_files([f])
+
     @staticmethod
-    def _save_file(contents, f):
+    def _save(contents, f):
         with open(f, 'w') as f1:
             f1.write(contents)
 
@@ -262,12 +266,24 @@ class MixinTests:
 
     def test_bad_rev(self):
         os.chdir(TEMP_DIR)
-        # TODO for some reason this isn't capturing the output!
+        # TODO for some reason this isn't capturing the output!
         with captured_output() as (out, err):
             self.assertRaises(CalledProcessError,
                               lambda x: Radius.new(rev=x, vc=self.vc),
                               'random_junk_sha')
         os.chdir(self.original_dir)
+
+    def test_earlier_revision(self):
+        start = self._save_and_commit('a=1;', 'AAA.py')
+        self.checkout('ter', create=True)
+        self._save_and_commit('b=1;', 'BBB.py')
+        tip = self._save_and_commit('c=1;', 'CCC.py')
+        self._save('c=1', 'CCC.py')
+
+        args = parse_args([start, '--diff'])
+        r = Radius.new(options=args, vc=self.vc)
+        with captured_output() as (out, err):
+            r.pep8radius()
 
 
 class TestRadiusGit(TestRadius, MixinTests):
@@ -296,9 +312,16 @@ class TestRadiusGit(TestRadius, MixinTests):
         try:
             check_output(["git", "add"] + file_names, stderr=STDOUT)
             check_output(["git", "commit", "-m", commit], stderr=STDOUT)
-            return True
+            return RadiusGit.current_branch()
         except (OSError, CalledProcessError):
             return False
+
+    @staticmethod
+    def checkout(branch, create=False):
+        if create:
+            check_output(["git", "checkout", '-b', branch], stderr=STDOUT)
+        else:
+            check_output(["git", "checkout", branch], stderr=STDOUT)
 
 
 class TestRadiusHg(TestRadius, MixinTests):
@@ -327,9 +350,16 @@ class TestRadiusHg(TestRadius, MixinTests):
         try:
             check_output(["hg", "add"] + file_names, stderr=STDOUT)
             check_output(["hg", "commit", "-m", commit], stderr=STDOUT)
-            return True
+            return RadiusHg.current_branch()
         except (OSError, CalledProcessError):
             return False
+
+    @staticmethod
+    def checkout(branch, create=False):
+        if create:
+            check_output(["hg", "branch", branch], stderr=STDOUT)
+        else:
+            check_output(["hg", "update", "--check", branch], stderr=STDOUT)
 
 
 class TestRadiusBzr(TestRadius, MixinTests):
@@ -358,9 +388,14 @@ class TestRadiusBzr(TestRadius, MixinTests):
         try:
             check_output(["bzr", "add"] + file_names, stderr=STDOUT)
             check_output(["bzr", "commit", "-m", commit], stderr=STDOUT)
-            return True
+            return RadiusBzr.current_branch()
         except (OSError, CalledProcessError):
             return False
+
+    @staticmethod
+    def checkout(branch, create=False):
+        create = ['--create-branch'] if create else []
+        check_output(["bzr", "switch", branch] + create, stderr=STDOUT)
 
 
 if __name__ == '__main__':
