@@ -472,7 +472,7 @@ class RadiusGit(Radius):
 
     @staticmethod
     def merge_base(rev1, rev2):
-        output = check_output(['git', 'merge-base', rev1, rev2])
+        output = check_output(['git', 'merge-base', rev1, rev2], stderr=STDOUT)
         return output.strip().decode('utf-8')
 
     def file_diff_cmd(self, f):
@@ -503,7 +503,7 @@ class RadiusHg(Radius):
 
     @staticmethod
     def merge_base(rev1, rev2):
-        output = check_output(['hg', 'debugancestor', rev1, rev2])
+        output = check_output(['hg', 'debugancestor', rev1, rev2], stderr=STDOUT)
         return output.strip().decode('utf-8').split(':')[1]
 
     def file_diff_cmd(self, f):
@@ -541,7 +541,7 @@ class RadiusBzr(Radius):
         # Note: find-merge-base just returns rev1 if rev2 is not found
         # we assume that rev2 is a legitamate revision.
         # the following raise a CalledProcessError if it's a bad revision
-        check_output(['bzr', 'log', '-c', rev1])
+        check_output(['bzr', 'log', '-c', rev1], stderr=STDOUT)
 
         output = check_output_ignore_exitcode(['bzr', 'find-merge-base',
                                               rev1, rev2])
