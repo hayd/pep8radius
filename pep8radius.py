@@ -306,6 +306,9 @@ class Radius:
 
     def autopep8_line_range(self, f, start, end):
         """Apply autopep8 between start and end of file f xcasxz."""
+        # not sure on behaviour if outside range (indexing starts at 1)
+        start = max(start, 1)
+
         self.options.line_range = [start, end]
         fixed = autopep8.fix_code(f,   self.options)
 
@@ -408,7 +411,7 @@ def line_numbers_from_file_udiff(udiff):
     """
     chunks = re.split('\n@@[^\n]+\n', udiff)[:0:-1]
 
-    line_numbers = re.findall('(?<=[+])\d+(?=,\d+)', udiff)
+    line_numbers = re.findall('(?<=@@\s[+-])\d+(?=,\d+)', udiff)
     line_numbers = list(map(int, line_numbers))[::-1]
 
     # Note: these were reversed as can modify number of lines
@@ -461,7 +464,7 @@ class RadiusGit(Radius):
 
     @staticmethod
     def current_branch():
-        output = check_output(["git", "rev-parse", "--abbrev-ref", "HEAD"])
+        output = check_output(["git", "rev-parse", "HEAD"])
         return output.strip().decode('utf-8')
 
     @staticmethod
@@ -493,7 +496,7 @@ class RadiusHg(Radius):
 
     @staticmethod
     def current_branch():
-        output = check_output(["hg", "id", "-b"])
+        output = check_output(["hg", "id"])[:12]  # this feels awkward
         return output.strip().decode('utf-8')
 
     @staticmethod
@@ -528,7 +531,8 @@ class RadiusBzr(Radius):
 
     @staticmethod
     def current_branch():
-        output = check_output(["bzr", "revno"])
+        output = check_output(["bzr", "version-info",
+                               "--custom", "--template={revision_id}"])
         return output.strip().decode('utf-8')
 
     @staticmethod

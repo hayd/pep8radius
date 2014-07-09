@@ -172,6 +172,11 @@ class TestRadius(TestCase):
         with open(f, 'w') as f1:
             f1.write(contents)
 
+    @staticmethod
+    def get_diff_many(modified, expected, files):
+        return ''.join(get_diff(*mef)
+                       for mef in zip(modified, expected, files))
+
     def check(self, original, modified, expected,
               test_name='check', options=None,
               directory=TEMP_DIR):
@@ -258,7 +263,7 @@ class MixinTests:
         original = 'def poor_indenting():\n  """       Great function"""\n  a = 1\n  b = 2\n  return a + b\n\n\n\nfoo = 1; bar = 2; print(foo * bar)\na=1; b=2; c=3\nd=7\n\ndef f(x = 1, y = 2):\n    return x + y\n'
         modified = 'def poor_indenting():\n  """  Very great function"""\n  a = 1\n  b = 2\n  return a + b\n\n\n\nfoo = 1; bar = 2; print(foo * bar)\na=1; b=42; c=3\nd=7\n\ndef f(x = 1, y = 2):\n    return x + y\n'
         expected = 'def poor_indenting():\n  """  Very great function"""\n  a = 1\n  b = 2\n  return a + b\n\n\n\nfoo = 1; bar = 2; print(foo * bar)\na = 1\nb = 42\nc = 3\nd=7\n\ndef f(x = 1, y = 2):\n    return x + y\n'
-        self.check(original, modified, expected, 'test_with_docformatter')
+        self.check(original, modified, expected, 'test_without_docformatter')
 
         expected = 'def poor_indenting():\n  """Very great function."""\n  a = 1\n  b = 2\n  return a + b\n\n\n\nfoo = 1; bar = 2; print(foo * bar)\na = 1\nb = 42\nc = 3\nd=7\n\ndef f(x = 1, y = 2):\n    return x + y\n'
         self.check(original, modified, expected,
@@ -280,10 +285,20 @@ class MixinTests:
         tip = self._save_and_commit('c=1;', 'CCC.py')
         self._save('c=1', 'CCC.py')
 
-        args = parse_args([start, '--diff'])
-        r = Radius.new(options=args, vc=self.vc)
+        args = parse_args(['--diff', '--no-color'])
+        r = Radius.new(rev=start, options=args, vc=self.vc)
         with captured_output() as (out, err):
             r.pep8radius()
+        diff = out.getvalue()
+
+        files = [os.path.join(TEMP_DIR, f) for f in ['BBB.py', 'CCC.py']]
+
+        exp_diff = self.get_diff_many(['b=1;', 'c=1'],
+                                      ['b = 1\n', 'c = 1\n'],
+                                      files)
+        self.assert_equal(diff, exp_diff, 'earlier_revision')
+
+        # TODO test the diff is correct
 
 
 class TestRadiusGit(TestRadius, MixinTests):
