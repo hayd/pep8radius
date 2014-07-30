@@ -359,7 +359,7 @@ class Radius:
                                       file_name)
                          for file_name in py_files]
 
-        return list(py_files_full)
+        return sorted(py_files_full)
 
     def line_numbers_from_file_diff(self, diff):
         "Potentially this is vc specific (if not using udiff)"
