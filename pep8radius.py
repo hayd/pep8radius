@@ -63,7 +63,12 @@ def shell_out_ignore_exitcode(cmd, stderr=STDOUT):
     try:
         return shell_out(cmd, stderr=stderr)
     except CalledProcessError as c:
-        return c.output.decode('utf-8').strip()
+        out = c.output
+    try:
+        return out.decode('utf-8')
+    except AttributeError:  # python3, pragma: no cover
+        pass
+    return out.strip()
 
 __version__ = version = '0.8.2a'
 
