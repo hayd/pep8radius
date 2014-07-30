@@ -49,17 +49,35 @@ if "check_output" not in dir(subprocess):  # pragma: no cover
     # overwrite CalledProcessError due to `output`
     # keyword not being available (in 2.6)
     subprocess.CalledProcessError = CalledProcessError
-check_output = subprocess.check_output
 
 
-__version__ = version = '0.8.1'
+def shell_out(cmd, stderr=STDOUT):
+    out = subprocess.check_output(cmd, stderr=stderr, universal_newlines=True)
+    try:
+        out = out.decode('utf-8')
+    except AttributeError:  # python3, pragma: no cover
+        pass
+    return out.strip()
+
+def shell_out_ignore_exitcode(cmd, stderr=STDOUT):
+    try:
+        return shell_out(cmd, stderr=stderr)
+    except CalledProcessError as c:
+        out = c.output
+    try:
+        return out.decode('utf-8')
+    except AttributeError:  # python3, pragma: no cover
+        pass
+    return out.strip()
+
+__version__ = version = '0.8.2a'
 
 
 DEFAULT_IGNORE = 'E24'
 DEFAULT_INDENT_SIZE = 4
 
 
-def main(args=None):
+def main(args=None, vc=None):
     try:  # pragma: no cover
         # Exit on broken pipe.
         signal.signal(signal.SIGPIPE, signal.SIG_DFL)
@@ -83,12 +101,12 @@ def main(args=None):
             sys.exit(0)
 
         try:
-            r = Radius.new(rev=args.rev, options=args)
+            r = Radius.new(rev=args.rev, options=args, vc=vc)
         except NotImplementedError as e:  # pragma: no cover
             print(e)
             sys.exit(1)
         except CalledProcessError as c:  # pragma: no cover
-            # cut off usage of git diff and exit
+            # cut off usage and exit
             output = c.output.splitlines()[0]
             print(output)
             sys.exit(c.returncode)
@@ -279,7 +297,7 @@ class Radius:
         # We hope that a CalledProcessError would have already raised
         # during the init if it were going to raise here.
         cmd = self.file_diff_cmd(file_name)
-        diff = check_output(cmd).decode('utf-8')
+        diff = shell_out_ignore_exitcode(cmd)
 
         with open(file_name, 'r') as f:
             original = f.read()
@@ -300,6 +318,9 @@ class Radius:
 
     def autopep8_line_range(self, f, start, end):
         """Apply autopep8 between start and end of file f xcasxz."""
+        # not sure on behaviour if outside range (indexing starts at 1)
+        start = max(start, 1)
+
         self.options.line_range = [start, end]
         fixed = autopep8.fix_code(f,   self.options)
 
@@ -320,8 +341,7 @@ class Radius:
         "Get the py files which have been changed since rev"
         cmd = self.filenames_diff_cmd()
 
-        # Note: This may raise a CalledProcessError
-        diff_files = check_output(cmd, stderr=STDOUT).decode('utf-8')
+        diff_files = shell_out_ignore_exitcode(cmd)
         diff_files = self.parse_diff_filenames(diff_files)
 
         py_files = set(f for f in diff_files if f.endswith('.py'))
@@ -332,12 +352,14 @@ class Radius:
                 py_files.difference_update(glob.fnmatch.filter(py_files,
                                                                pattern))
 
+        # This may raise a CalledProcessError,
+        # however it should already have been caught upon new.
         root_dir = self.root_dir()
         py_files_full = [os.path.join(root_dir,
                                       file_name)
                          for file_name in py_files]
 
-        return list(py_files_full)
+        return sorted(py_files_full)
 
     def line_numbers_from_file_diff(self, diff):
         "Potentially this is vc specific (if not using udiff)"
@@ -401,12 +423,13 @@ def line_numbers_from_file_udiff(udiff):
     """
     chunks = re.split('\n@@[^\n]+\n', udiff)[:0:-1]
 
-    line_numbers = re.findall('(?<=[+])\d+(?=,\d+)', udiff)
+    line_numbers = re.findall('(?<=@@\s[+-])\d+(?=,\d+)', udiff)
     line_numbers = list(map(int, line_numbers))[::-1]
 
     # Note: these were reversed as can modify number of lines
     for c, start in zip(chunks, line_numbers):
-        empty = [line.startswith(' ') for line in c.splitlines()]
+        empty = [line.startswith(' ') or not line
+                 for line in c.splitlines()]
         pre_padding = sum(1 for _ in takewhile(lambda b: b, empty))
         post_padding = sum(1 for _ in takewhile(lambda b: b, empty[::-1]))
 
@@ -453,19 +476,16 @@ class RadiusGit(Radius):
 
     @staticmethod
     def current_branch():
-        output = check_output(["git", "rev-parse", "--abbrev-ref", "HEAD"])
-        return output.strip().decode('utf-8')
+        return shell_out(["git", "rev-parse", "HEAD"])
 
     @staticmethod
     def root_dir():
-        output = check_output(['git', 'rev-parse', '--show-toplevel'])
-        root = output.strip().decode('utf-8')
+        root = shell_out(['git', 'rev-parse', '--show-toplevel'])
         return os.path.normpath(root)
 
     @staticmethod
     def merge_base(rev1, rev2):
-        output = check_output(['git', 'merge-base', rev1, rev2])
-        return output.strip().decode('utf-8')
+        return shell_out(['git', 'merge-base', rev1, rev2])
 
     def file_diff_cmd(self, f):
         "Get diff for one file, f"
@@ -485,18 +505,16 @@ class RadiusHg(Radius):
 
     @staticmethod
     def current_branch():
-        output = check_output(["hg", "id", "-b"])
-        return output.strip().decode('utf-8')
+        return shell_out(["hg", "id"])[:12]  # this feels awkward
 
     @staticmethod
     def root_dir():
-        output = check_output(['hg', 'root'])
-        return output.strip().decode('utf-8')
+        return shell_out(['hg', 'root'])
 
     @staticmethod
     def merge_base(rev1, rev2):
-        output = check_output(['hg', 'debugancestor', rev1, rev2])
-        return output.strip().decode('utf-8').split(':')[1]
+        output = shell_out(['hg', 'debugancestor', rev1, rev2])
+        return output.split(':')[1]
 
     def file_diff_cmd(self, f):
         "Get diff for one file, f"
@@ -512,16 +530,62 @@ class RadiusHg(Radius):
         # one issue is that occasionaly you get stdout from something else
         # specifically I found this in Coverage.py, luckily the format is
         # different (at least in this case)
-        it = re.findall('(\n|^) (?P<file_name>.*\.py) \|', diff_files)
+        it = re.findall('(\n|^) ?(?P<file_name>.*\.py)\s+\|', diff_files)
         return [t[1] for t in it]
 
 
-radii = {'git': RadiusGit, 'hg': RadiusHg}
+class RadiusBzr(Radius):
+
+    @staticmethod
+    def current_branch():
+        return shell_out(["bzr", "version-info",
+                          "--custom", "--template={revision_id}"])
+
+    @staticmethod
+    def root_dir():
+        return shell_out(['bzr', 'root'])
+
+    @staticmethod
+    def merge_base(rev1, rev2):
+        # Note: find-merge-base just returns rev1 if rev2 is not found
+        # we assume that rev2 is a legitamate revision.
+        # the following raise a CalledProcessError if it's a bad revision
+        shell_out(['bzr', 'log', '-c', rev1])
+
+        output = shell_out_ignore_exitcode(['bzr', 'find-merge-base',
+                                            rev1, rev2])
+        # 'merge base is revision name@example.com-20140602232408-d3wspoer3m35'
+        return output.rsplit(' ', 1)[1]
+
+    def file_diff_cmd(self, f):
+        "Get diff for one file, f"
+        return ['bzr', 'diff', f, '-r', self.rev]
+
+    def filenames_diff_cmd(self):
+        "Get the names of the py files in diff"
+        # TODO Can we do this better (without parsing the entire diff?)
+        return ['bzr', 'status', '-S', '-r', self.rev]  # TODO '--from-root' ?
+
+    @staticmethod
+    def parse_diff_filenames(diff_files):
+        "Parse the output of filenames_diff_cmd"
+        # ?   .gitignore
+        # M  0.txt
+        files = []
+        for line in diff_files.splitlines():
+            line = line.strip()
+            fn = re.findall('[^ ]+\s+(.*.py)', line)
+            if fn and not line.startswith('?'):
+                files.append(fn[0])
+        return files
+
+
+radii = {'git': RadiusGit, 'hg': RadiusHg, 'bzr': RadiusBzr}
 
 
 def using_git():
     try:
-        git_log = check_output(["git", "log"], stderr=STDOUT)
+        git_log = shell_out(["git", "log"])
         return True
     except (CalledProcessError, OSError):  # pragma: no cover
         return False
@@ -529,7 +593,15 @@ def using_git():
 
 def using_hg():
     try:
-        hg_log = check_output(["hg",   "log"], stderr=STDOUT)
+        hg_log = shell_out(["hg",   "log"])
+        return True
+    except (CalledProcessError, OSError):
+        return False
+
+
+def using_bzr():
+    try:
+        bzr_log = shell_out(["bzr", "log"])
         return True
     except (CalledProcessError, OSError):
         return False
@@ -537,18 +609,21 @@ def using_hg():
 
 def which_version_control():  # pragma: no cover
     """Try to see if they are using git or hg.
-    return git, hg or raise NotImplementedError.
+    return git, hg, bzr or raise NotImplementedError.
 
     """
+    if using_hg():#TODO move down
+        return 'hg'
+
     if using_git():
         return 'git'
 
-    if using_hg():
-        return 'hg'
+    if using_bzr():
+        return 'bzr'
 
     # Not supported (yet)
-    raise NotImplementedError("Unknown version control system. "
-                              "Ensure you're in the project directory.")
+    raise NotImplementedError("Unknown version control system, "
+                              "or you're in the project directory.")
 
 
 if __name__ == "__main__":  # pragma: no cover

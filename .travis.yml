@@ -19,9 +19,10 @@ install:
     - git config --global user.email "you@example.com"
     - git config --global user.name "Your Name"
     - echo -e "[ui]\nusername = Your Name <your@email.com>" > ~/.hgrc
+    - bzr whoami "Your Name <you@example.com>"
 
 script:
-    - py.test tests/test_pep8radius.py --cov=pep8radius
+    - nosetests --with-coverage --cover-package=pep8radius
 
 after_success:
     - pip install --quiet coveralls

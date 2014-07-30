@@ -18,12 +18,12 @@ else:
 
 ROOT_DIR = os.path.split(os.path.abspath(os.path.dirname(__file__)))[0]
 sys.path.insert(0, ROOT_DIR)
-from pep8radius import (Radius, RadiusGit, RadiusHg,
-                        check_output, CalledProcessError, STDOUT,
+from pep8radius import (Radius, RadiusGit, RadiusHg, RadiusBzr,
+                        shell_out, CalledProcessError,
                         main,
                         parse_args,
                         which_version_control,
-                        using_git, using_hg,
+                        using_git, using_hg, using_bzr,
                         version, get_diff)
 
 PEP8RADIUS = os.path.join(ROOT_DIR, 'pep8radius.py')
@@ -52,12 +52,12 @@ def captured_output():
     finally:
         sys.stdout, sys.stderr = old_out, old_err
 
-def pep8radius_main(args):
+def pep8radius_main(args, vc=None):
     if isinstance(args, list):
         args = parse_args(args)
     with captured_output() as (out, err):
         try:
-            main(args)
+            main(args, vc=vc)
         except SystemExit:
             pass
     return out.getvalue().strip()
@@ -95,10 +95,15 @@ class TestRadiusNoVCS(TestCase):
     def test_using_vc(self):
         TestRadiusGit.delete_repo()
         TestRadiusHg.delete_repo()
+        TestRadiusBzr.delete_repo()
 
         self.assertFalse(using_hg())
         if TestRadiusHg.create_repo():
             self.assertTrue(using_hg())
+
+        self.assertFalse(using_bzr())
+        if TestRadiusBzr.create_repo():
+            self.assertTrue(using_bzr())
 
         # git is seen before this, as the dir above is git!
         self.assertTrue(using_git())
@@ -131,14 +136,8 @@ class TestRadiusNoVCS(TestCase):
 
     def test_list_fixes(self):
         fixes = pep8radius_main(['--list-fixes'])
-        afixes = check_output(['autopep8', '--list-fixes'])\
-                   .decode("utf-8").strip()
+        afixes = shell_out(['autopep8', '--list-fixes'])
         self.assertEqual(fixes, afixes)
-
-    def test_bad_rev(self):
-        self.assertRaises(CalledProcessError,
-                          lambda x: Radius.new(rev=x),
-                          'random_junk_sha')
 
 
 class TestRadius(TestCase):
@@ -155,8 +154,27 @@ class TestRadius(TestCase):
         os.chdir(TEMP_DIR)
         self.delete_repo()
         success = self.create_repo()
+        committed = self._save_and_commit('a=1;', 'a.py')
         os.chdir(self.original_dir)
         return success
+
+    def setUp(self):
+        os.chdir(TEMP_DIR)
+
+    @classmethod
+    def _save_and_commit(cls, contents, f):
+        cls._save(contents, f)
+        return cls.successfully_commit_files([f])
+
+    @staticmethod
+    def _save(contents, f):
+        with open(f, 'w') as f1:
+            f1.write(contents)
+
+    @staticmethod
+    def get_diff_many(modified, expected, files):
+        return ''.join(get_diff(*mef)
+                       for mef in zip(modified, expected, files))
 
     def check(self, original, modified, expected,
               test_name='check', options=None,
@@ -209,7 +227,7 @@ class TestRadius(TestCase):
 
         # Run pep8radius again, it *should* be that this doesn't do anything.
         with captured_output() as (out, err):
-            pep8radius_main(options)
+            pep8radius_main(options, vc=self.vc)
         self.assertEqual(out.getvalue(), '')
 
         with open(temp_file, 'r') as f:
@@ -244,11 +262,45 @@ class MixinTests:
         original = 'def poor_indenting():\n  """       Great function"""\n  a = 1\n  b = 2\n  return a + b\n\n\n\nfoo = 1; bar = 2; print(foo * bar)\na=1; b=2; c=3\nd=7\n\ndef f(x = 1, y = 2):\n    return x + y\n'
         modified = 'def poor_indenting():\n  """  Very great function"""\n  a = 1\n  b = 2\n  return a + b\n\n\n\nfoo = 1; bar = 2; print(foo * bar)\na=1; b=42; c=3\nd=7\n\ndef f(x = 1, y = 2):\n    return x + y\n'
         expected = 'def poor_indenting():\n  """  Very great function"""\n  a = 1\n  b = 2\n  return a + b\n\n\n\nfoo = 1; bar = 2; print(foo * bar)\na = 1\nb = 42\nc = 3\nd=7\n\ndef f(x = 1, y = 2):\n    return x + y\n'
-        self.check(original, modified, expected, 'test_with_docformatter')
+        self.check(original, modified, expected, 'test_without_docformatter')
 
         expected = 'def poor_indenting():\n  """Very great function."""\n  a = 1\n  b = 2\n  return a + b\n\n\n\nfoo = 1; bar = 2; print(foo * bar)\na = 1\nb = 42\nc = 3\nd=7\n\ndef f(x = 1, y = 2):\n    return x + y\n'
         self.check(original, modified, expected,
                    'test_with_docformatter', ['--docformatter'])
+
+    def test_bad_rev(self):
+        os.chdir(TEMP_DIR)
+        # TODO for some reason this isn't capturing the output!
+        with captured_output() as (out, err):
+            self.assertRaises(CalledProcessError,
+                              lambda x: Radius.new(rev=x, vc=self.vc),
+                              'random_junk_sha')
+        os.chdir(self.original_dir)
+
+    def test_earlier_revision(self):
+        if self.vc == 'bzr':
+            raise SkipTest()
+
+        start = self._save_and_commit('a=1;', 'AAA.py')
+        self.checkout('ter', create=True)
+        self._save_and_commit('b=1;', 'BBB.py')
+        tip = self._save_and_commit('c=1;', 'CCC.py')
+        self._save('c=1', 'CCC.py')
+
+        args = parse_args(['--diff', '--no-color'])
+        r = Radius.new(rev=start, options=args, vc=self.vc)
+        with captured_output() as (out, err):
+            r.pep8radius()
+        diff = out.getvalue()
+
+        files = [os.path.join(TEMP_DIR, f) for f in ['BBB.py', 'CCC.py']]
+
+        exp_diff = self.get_diff_many(['b=1;', 'c=1'],
+                                      ['b = 1\n', 'c = 1\n'],
+                                      files)
+        self.assert_equal(diff, exp_diff, 'earlier_revision')
+
+        # TODO test the diff is correct
 
 
 class TestRadiusGit(TestRadius, MixinTests):
@@ -265,7 +317,7 @@ class TestRadiusGit(TestRadius, MixinTests):
     def create_repo():
         os.chdir(TEMP_DIR)
         try:
-            check_output(["git", "init"], stderr=STDOUT)
+            shell_out(["git", "init"])
             return True
         except (OSError, CalledProcessError):
             return False
@@ -275,11 +327,18 @@ class TestRadiusGit(TestRadius, MixinTests):
                                   commit="initial_commit"):
         os.chdir(TEMP_DIR)
         try:
-            check_output(["git", "add"] + file_names, stderr=STDOUT)
-            check_output(["git", "commit", "-m", commit], stderr=STDOUT)
-            return True
+            shell_out(["git", "add"] + file_names)
+            shell_out(["git", "commit", "-m", commit])
+            return RadiusGit.current_branch()
         except (OSError, CalledProcessError):
             return False
+
+    @staticmethod
+    def checkout(branch, create=False):
+        if create:
+            shell_out(["git", "checkout", '-b', branch])
+        else:
+            shell_out(["git", "checkout", branch])
 
 
 class TestRadiusHg(TestRadius, MixinTests):
@@ -296,7 +355,7 @@ class TestRadiusHg(TestRadius, MixinTests):
     def create_repo():
         os.chdir(TEMP_DIR)
         try:
-            check_output(["hg", "init"], stderr=STDOUT)
+            shell_out(["hg", "init"])
             return True
         except (OSError, CalledProcessError):
             return False
@@ -306,11 +365,55 @@ class TestRadiusHg(TestRadius, MixinTests):
                                   commit="initial_commit"):
         os.chdir(TEMP_DIR)
         try:
-            check_output(["hg", "add"] + file_names, stderr=STDOUT)
-            check_output(["hg", "commit", "-m", commit], stderr=STDOUT)
+            shell_out(["hg", "add"] + file_names)
+            shell_out(["hg", "commit", "-m", commit])
+            return RadiusHg.current_branch()
+        except (OSError, CalledProcessError):
+            return False
+
+    @staticmethod
+    def checkout(branch, create=False):
+        if create:
+            shell_out(["hg", "branch", branch])
+        else:
+            shell_out(["hg", "update", "--check", branch])
+
+
+class TestRadiusBzr(TestRadius, MixinTests):
+    vc = 'bzr'
+
+    @staticmethod
+    def delete_repo():
+        try:
+            rmtree(os.path.join(TEMP_DIR, '.bzr'))
+        except OSError:
+            pass
+
+    @staticmethod
+    def create_repo():
+        os.chdir(TEMP_DIR)
+        try:
+            shell_out(["bzr", "init"])
             return True
         except (OSError, CalledProcessError):
             return False
+
+    @staticmethod
+    def successfully_commit_files(file_names,
+                                  commit="initial_commit"):
+        os.chdir(TEMP_DIR)
+        try:
+            shell_out(["bzr", "add"] + file_names)
+            shell_out(["bzr", "commit", "-m", commit])
+            return RadiusBzr.current_branch()
+        except (OSError, CalledProcessError):
+            return False
+
+    @staticmethod
+    def checkout(branch, create=False):
+        create = ['--create-branch'] if create else []
+        shell_out(["bzr", "switch", branch] + create)
+
 
 if __name__ == '__main__':
     main()
