@@ -22,7 +22,7 @@ install:
     - bzr whoami "Your Name <you@example.com>"
 
 script:
-    - py.test tests/test_pep8radius.py --cov=pep8radius
+    - nosetests --with-coverage --cover-package=pep8radius
 
 after_success:
     - pip install --quiet coveralls
