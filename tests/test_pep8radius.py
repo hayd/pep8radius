@@ -279,6 +279,9 @@ class MixinTests:
         os.chdir(self.original_dir)
 
     def test_earlier_revision(self):
+        if self.vc == 'bzr':
+            raise SkipTest()
+
         start = self._save_and_commit('a=1;', 'AAA.py')
         self.checkout('ter', create=True)
         self._save_and_commit('b=1;', 'BBB.py')
