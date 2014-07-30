@@ -49,14 +49,21 @@ if "check_output" not in dir(subprocess):  # pragma: no cover
     # overwrite CalledProcessError due to `output`
     # keyword not being available (in 2.6)
     subprocess.CalledProcessError = CalledProcessError
-check_output = subprocess.check_output
 
-def check_output_ignore_exitcode(cmd, stderr=STDOUT):
+
+def shell_out(cmd, stderr=STDOUT):
+    out = subprocess.check_output(cmd, stderr=stderr, universal_newlines=True)
     try:
-        ret = check_output(cmd)
+        out = out.decode('utf-8')
+    except AttributeError:  # python3, pragma: no cover
+        pass
+    return out.strip()
+
+def shell_out_ignore_exitcode(cmd, stderr=STDOUT):
+    try:
+        return shell_out(cmd, stderr=stderr)
     except CalledProcessError as c:
-        ret = c.output
-    return ret.decode('utf-8')
+        return c.output.decode('utf-8').strip()
 
 __version__ = version = '0.8.2a'
 
@@ -285,7 +292,7 @@ class Radius:
         # We hope that a CalledProcessError would have already raised
         # during the init if it were going to raise here.
         cmd = self.file_diff_cmd(file_name)
-        diff = check_output_ignore_exitcode(cmd)
+        diff = shell_out_ignore_exitcode(cmd)
 
         with open(file_name, 'r') as f:
             original = f.read()
@@ -329,7 +336,7 @@ class Radius:
         "Get the py files which have been changed since rev"
         cmd = self.filenames_diff_cmd()
 
-        diff_files = check_output_ignore_exitcode(cmd)
+        diff_files = shell_out_ignore_exitcode(cmd)
         diff_files = self.parse_diff_filenames(diff_files)
 
         py_files = set(f for f in diff_files if f.endswith('.py'))
@@ -464,19 +471,16 @@ class RadiusGit(Radius):
 
     @staticmethod
     def current_branch():
-        output = check_output(["git", "rev-parse", "HEAD"])
-        return output.strip().decode('utf-8')
+        return shell_out(["git", "rev-parse", "HEAD"])
 
     @staticmethod
     def root_dir():
-        output = check_output(['git', 'rev-parse', '--show-toplevel'])
-        root = output.strip().decode('utf-8')
+        root = shell_out(['git', 'rev-parse', '--show-toplevel'])
         return os.path.normpath(root)
 
     @staticmethod
     def merge_base(rev1, rev2):
-        output = check_output(['git', 'merge-base', rev1, rev2], stderr=STDOUT)
-        return output.strip().decode('utf-8')
+        return shell_out(['git', 'merge-base', rev1, rev2])
 
     def file_diff_cmd(self, f):
         "Get diff for one file, f"
@@ -496,18 +500,16 @@ class RadiusHg(Radius):
 
     @staticmethod
     def current_branch():
-        output = check_output(["hg", "id"])[:12]  # this feels awkward
-        return output.strip().decode('utf-8')
+        return shell_out(["hg", "id"])[:12]  # this feels awkward
 
     @staticmethod
     def root_dir():
-        output = check_output(['hg', 'root'])
-        return output.strip().decode('utf-8')
+        return shell_out(['hg', 'root'])
 
     @staticmethod
     def merge_base(rev1, rev2):
-        output = check_output(['hg', 'debugancestor', rev1, rev2], stderr=STDOUT)
-        return output.strip().decode('utf-8').split(':')[1]
+        output = shell_out(['hg', 'debugancestor', rev1, rev2])
+        return output.split(':')[1]
 
     def file_diff_cmd(self, f):
         "Get diff for one file, f"
@@ -523,7 +525,7 @@ class RadiusHg(Radius):
         # one issue is that occasionaly you get stdout from something else
         # specifically I found this in Coverage.py, luckily the format is
         # different (at least in this case)
-        it = re.findall('(\n|^) (?P<file_name>.*\.py) \|', diff_files)
+        it = re.findall('(\n|^) ?(?P<file_name>.*\.py)\s+\|', diff_files)
         return [t[1] for t in it]
 
 
@@ -531,26 +533,24 @@ class RadiusBzr(Radius):
 
     @staticmethod
     def current_branch():
-        output = check_output(["bzr", "version-info",
-                               "--custom", "--template={revision_id}"])
-        return output.strip().decode('utf-8')
+        return shell_out(["bzr", "version-info",
+                          "--custom", "--template={revision_id}"])
 
     @staticmethod
     def root_dir():
-        output = check_output(['bzr', 'root'], stderr=STDOUT)
-        return output.strip().decode('utf-8')
+        return shell_out(['bzr', 'root'])
 
     @staticmethod
     def merge_base(rev1, rev2):
         # Note: find-merge-base just returns rev1 if rev2 is not found
         # we assume that rev2 is a legitamate revision.
         # the following raise a CalledProcessError if it's a bad revision
-        check_output(['bzr', 'log', '-c', rev1], stderr=STDOUT)
+        shell_out(['bzr', 'log', '-c', rev1])
 
-        output = check_output_ignore_exitcode(['bzr', 'find-merge-base',
-                                              rev1, rev2])
+        output = shell_out_ignore_exitcode(['bzr', 'find-merge-base',
+                                            rev1, rev2])
         # 'merge base is revision name@example.com-20140602232408-d3wspoer3m35'
-        return output.strip().rsplit(' ', 1)[1]
+        return output.rsplit(' ', 1)[1]
 
     def file_diff_cmd(self, f):
         "Get diff for one file, f"
@@ -580,7 +580,7 @@ radii = {'git': RadiusGit, 'hg': RadiusHg, 'bzr': RadiusBzr}
 
 def using_git():
     try:
-        git_log = check_output(["git", "log"], stderr=STDOUT)
+        git_log = shell_out(["git", "log"])
         return True
     except (CalledProcessError, OSError):  # pragma: no cover
         return False
@@ -588,7 +588,7 @@ def using_git():
 
 def using_hg():
     try:
-        hg_log = check_output(["hg",   "log"], stderr=STDOUT)
+        hg_log = shell_out(["hg",   "log"])
         return True
     except (CalledProcessError, OSError):
         return False
@@ -596,7 +596,7 @@ def using_hg():
 
 def using_bzr():
     try:
-        bzr_log = check_output(["bzr", "log"], stderr=STDOUT)
+        bzr_log = shell_out(["bzr", "log"])
         return True
     except (CalledProcessError, OSError):
         return False
@@ -607,11 +607,11 @@ def which_version_control():  # pragma: no cover
     return git, hg, bzr or raise NotImplementedError.
 
     """
+    if using_hg():#TODO move down
+        return 'hg'
+
     if using_git():
         return 'git'
-
-    if using_hg():
-        return 'hg'
 
     if using_bzr():
         return 'bzr'

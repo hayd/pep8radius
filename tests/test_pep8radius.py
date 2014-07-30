@@ -19,7 +19,7 @@ else:
 ROOT_DIR = os.path.split(os.path.abspath(os.path.dirname(__file__)))[0]
 sys.path.insert(0, ROOT_DIR)
 from pep8radius import (Radius, RadiusGit, RadiusHg, RadiusBzr,
-                        check_output, CalledProcessError, STDOUT,
+                        shell_out, CalledProcessError,
                         main,
                         parse_args,
                         which_version_control,
@@ -136,8 +136,7 @@ class TestRadiusNoVCS(TestCase):
 
     def test_list_fixes(self):
         fixes = pep8radius_main(['--list-fixes'])
-        afixes = check_output(['autopep8', '--list-fixes'])\
-                   .decode("utf-8").strip()
+        afixes = shell_out(['autopep8', '--list-fixes'])
         self.assertEqual(fixes, afixes)
 
 
@@ -318,7 +317,7 @@ class TestRadiusGit(TestRadius, MixinTests):
     def create_repo():
         os.chdir(TEMP_DIR)
         try:
-            check_output(["git", "init"], stderr=STDOUT)
+            shell_out(["git", "init"])
             return True
         except (OSError, CalledProcessError):
             return False
@@ -328,8 +327,8 @@ class TestRadiusGit(TestRadius, MixinTests):
                                   commit="initial_commit"):
         os.chdir(TEMP_DIR)
         try:
-            check_output(["git", "add"] + file_names, stderr=STDOUT)
-            check_output(["git", "commit", "-m", commit], stderr=STDOUT)
+            shell_out(["git", "add"] + file_names)
+            shell_out(["git", "commit", "-m", commit])
             return RadiusGit.current_branch()
         except (OSError, CalledProcessError):
             return False
@@ -337,9 +336,9 @@ class TestRadiusGit(TestRadius, MixinTests):
     @staticmethod
     def checkout(branch, create=False):
         if create:
-            check_output(["git", "checkout", '-b', branch], stderr=STDOUT)
+            shell_out(["git", "checkout", '-b', branch])
         else:
-            check_output(["git", "checkout", branch], stderr=STDOUT)
+            shell_out(["git", "checkout", branch])
 
 
 class TestRadiusHg(TestRadius, MixinTests):
@@ -356,7 +355,7 @@ class TestRadiusHg(TestRadius, MixinTests):
     def create_repo():
         os.chdir(TEMP_DIR)
         try:
-            check_output(["hg", "init"], stderr=STDOUT)
+            shell_out(["hg", "init"])
             return True
         except (OSError, CalledProcessError):
             return False
@@ -366,8 +365,8 @@ class TestRadiusHg(TestRadius, MixinTests):
                                   commit="initial_commit"):
         os.chdir(TEMP_DIR)
         try:
-            check_output(["hg", "add"] + file_names, stderr=STDOUT)
-            check_output(["hg", "commit", "-m", commit], stderr=STDOUT)
+            shell_out(["hg", "add"] + file_names)
+            shell_out(["hg", "commit", "-m", commit])
             return RadiusHg.current_branch()
         except (OSError, CalledProcessError):
             return False
@@ -375,9 +374,9 @@ class TestRadiusHg(TestRadius, MixinTests):
     @staticmethod
     def checkout(branch, create=False):
         if create:
-            check_output(["hg", "branch", branch], stderr=STDOUT)
+            shell_out(["hg", "branch", branch])
         else:
-            check_output(["hg", "update", "--check", branch], stderr=STDOUT)
+            shell_out(["hg", "update", "--check", branch])
 
 
 class TestRadiusBzr(TestRadius, MixinTests):
@@ -394,7 +393,7 @@ class TestRadiusBzr(TestRadius, MixinTests):
     def create_repo():
         os.chdir(TEMP_DIR)
         try:
-            check_output(["bzr", "init"], stderr=STDOUT)
+            shell_out(["bzr", "init"])
             return True
         except (OSError, CalledProcessError):
             return False
@@ -404,8 +403,8 @@ class TestRadiusBzr(TestRadius, MixinTests):
                                   commit="initial_commit"):
         os.chdir(TEMP_DIR)
         try:
-            check_output(["bzr", "add"] + file_names, stderr=STDOUT)
-            check_output(["bzr", "commit", "-m", commit], stderr=STDOUT)
+            shell_out(["bzr", "add"] + file_names)
+            shell_out(["bzr", "commit", "-m", commit])
             return RadiusBzr.current_branch()
         except (OSError, CalledProcessError):
             return False
@@ -413,7 +412,7 @@ class TestRadiusBzr(TestRadius, MixinTests):
     @staticmethod
     def checkout(branch, create=False):
         create = ['--create-branch'] if create else []
-        check_output(["bzr", "switch", branch] + create, stderr=STDOUT)
+        shell_out(["bzr", "switch", branch] + create)
 
 
 if __name__ == '__main__':
