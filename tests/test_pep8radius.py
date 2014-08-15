@@ -312,7 +312,7 @@ class TestRadiusGit(TestRadius, MixinTests):
         try:
             temp_path = os.path.join(TEMP_DIR, '.git')
             rmtree(temp_path)
-        except OSError as e:
+        except OSError as e: # pragma: no cover
         # see http://stackoverflow.com/questions/1213706/what-user-do-python-scripts-run-as-in-windows and http://stackoverflow.com/questions/7228296/permission-change-of-files-in-python
             if e.errno == errno.EACCES:
                 for dirpath, dirnames, filenames in os.walk(temp_path):
