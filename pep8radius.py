@@ -14,7 +14,7 @@ import sys
 
 try:
     from subprocess import STDOUT, check_output, CalledProcessError
-except:  # pragma: no cover
+except ImportError:  # pragma: no cover
     # python 2.6 doesn't include check_output
     # monkey patch it in!
     import subprocess
@@ -26,7 +26,7 @@ except:  # pragma: no cover
                              'it will be overridden.')
         process = subprocess.Popen(stdout=subprocess.PIPE,
                                    *popenargs, **kwargs)
-        output, unused_err = process.communicate()
+        output, _ = process.communicate()
         retcode = process.poll()
         if retcode:
             cmd = kwargs.get("args")
