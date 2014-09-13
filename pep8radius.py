@@ -464,7 +464,6 @@ def line_numbers_from_file_udiff(udiff):
         ilines = enumerate((line for line in c.splitlines()
                             if not line.startswith('-')),
                            start=start)
-        ilines = ilines
         added_lines = [i for i, line in ilines if line.startswith('+')]
         if added_lines:
             yield (added_lines[0], added_lines[-1])
