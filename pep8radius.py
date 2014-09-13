@@ -4,7 +4,6 @@ import autopep8
 import colorama
 import docformatter
 from difflib import unified_diff
-from itertools import takewhile
 import glob
 import os
 import re
@@ -429,16 +428,20 @@ class Radius(object):
     def filenames_diff_cmd(self):
         raise AbstractMethodError()
 
-    def parse_diff_filenames(self, diff_files):
+    @staticmethod
+    def parse_diff_filenames(diff_files):
         raise AbstractMethodError()
 
-    def root_dir(self):
+    @staticmethod
+    def root_dir():
         raise AbstractMethodError()
 
-    def current_branch(self):
+    @staticmethod
+    def current_branch():
         raise AbstractMethodError()
 
-    def merge_base(self):
+    @staticmethod
+    def merge_base(rev1, rev2):
         raise AbstractMethodError()
 
 
