@@ -4,6 +4,8 @@ from contextlib import contextmanager
 import os
 from shutil import rmtree
 import sys
+import errno
+import stat
 
 try:
     from StringIO import StringIO
@@ -40,7 +42,6 @@ try:
     os.mkdir(SUBTEMP_DIR)
 except OSError:
     pass
-
 
 @contextmanager
 def captured_output():
@@ -309,9 +310,17 @@ class TestRadiusGit(TestRadius, MixinTests):
     @staticmethod
     def delete_repo():
         try:
-            rmtree(os.path.join(TEMP_DIR, '.git'))
-        except OSError:
-            pass
+            temp_path = os.path.join(TEMP_DIR, '.git')
+            rmtree(temp_path)
+        except OSError as e: # pragma: no cover
+        # see http://stackoverflow.com/questions/1213706/what-user-do-python-scripts-run-as-in-windows and http://stackoverflow.com/questions/7228296/permission-change-of-files-in-python
+            if e.errno == errno.EACCES:
+                for dirpath, dirnames, filenames in os.walk(temp_path):
+                    for filename in filenames:
+                        os.chmod(
+                            os.path.join(dirpath, filename), stat.S_IWRITE)
+                rmtree(temp_path)
+
 
     @staticmethod
     def create_repo():
