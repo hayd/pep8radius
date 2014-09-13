@@ -48,19 +48,31 @@ $ pep8radius --docformatter --diff
 
 *Note: can also use `btyfi` alias for `pep8radius`.*
 
+---
+
 It can be nice to pipe the diff to [cdiff](https://pypi.python.org/pypi/cdiff) (which
 makes diffs pretty and has lots of options):
 
 ```sh
-$ pep8radius --diff | cdiff
-$ pep8radius --diff | cdiff --side-by-side
+$ pep8radius --diff --no-color | cdiff
+$ pep8radius --diff --no-color | cdiff --side-by-side
 ```
+
+You can get strange results if you don't use no-color.  
+I actually use the following git
+alias (which allows `git rad` and `git rad -i`):
+```sh
+[alias]
+    rad = !pep8radius master --diff --no-color $@ | cdiff --side-by-side
+```
+
+![git rad](https://cloud.githubusercontent.com/assets/1931852/4259933/f0589480-3b1c-11e4-89cf-565c28da700a.png)
 
 Requirements
 ------------
-pep8radius requires [autopep8](https://pypi.python.org/pypi/autopep8), which in turn
-requires [pep8](https://pypi.python.org/pypi/pep8). The docformatter option, to fix
-docstrings, requires [docformatter](https://pypi.python.org/pypi/docformatter).
+pep8radius uses [autopep8](https://pypi.python.org/pypi/autopep8), and in turn
+[pep8](https://pypi.python.org/pypi/pep8). The docformatter option, to fix
+docstrings, uses [docformatter](https://pypi.python.org/pypi/docformatter).
 
 VCS Support
 -----------
