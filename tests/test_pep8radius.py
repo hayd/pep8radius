@@ -161,6 +161,9 @@ class TestRadius(TestCase):
 
     def setUp(self):
         os.chdir(TEMP_DIR)
+        if not self.using_vc:
+            raise SkipTest("%s not available" % self.vc)
+
 
     @classmethod
     def _save_and_commit(cls, contents, f):
@@ -183,9 +186,6 @@ class TestRadius(TestCase):
         """Modify original to modified, and check that pep8radius
         turns this into expected."""
         os.chdir(directory)
-        if not self.using_vc:
-            raise SkipTest("%s not available" % self.vc)
-
         temp_file = os.path.join(TEMP_DIR, 'temp.py')
 
         options = parse_args(options)
