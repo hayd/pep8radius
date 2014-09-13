@@ -9,15 +9,16 @@ import glob
 import os
 import re
 import signal
-import subprocess
-from subprocess import STDOUT, CalledProcessError
 import sys
 
 
-# python 2.6 doesn't include check_output
-if "check_output" not in dir(subprocess):  # pragma: no cover
-    # duck punch it in!
+try:
+    from subprocess import STDOUT, check_output, CalledProcessError
+except:  # pragma: no cover
+    # python 2.6 doesn't include check_output
+    # monkey patch it in!
     import subprocess
+    STDOUT = subprocess.STDOUT
 
     def check_output(*popenargs, **kwargs):
         if 'stdout' in kwargs:  # pragma: no cover
@@ -36,6 +37,8 @@ if "check_output" not in dir(subprocess):  # pragma: no cover
         return output
     subprocess.check_output = check_output
 
+    # overwrite CalledProcessError due to `output`
+    # keyword not being available (in 2.6)
     class CalledProcessError(Exception):
 
         def __init__(self, returncode, cmd, output=None):
@@ -46,13 +49,11 @@ if "check_output" not in dir(subprocess):  # pragma: no cover
         def __str__(self):
             return "Command '%s' returned non-zero exit status %d" % (
                 self.cmd, self.returncode)
-    # overwrite CalledProcessError due to `output`
-    # keyword not being available (in 2.6)
     subprocess.CalledProcessError = CalledProcessError
 
 
 def shell_out(cmd, stderr=STDOUT):
-    out = subprocess.check_output(cmd, stderr=stderr, universal_newlines=True)
+    out = check_output(cmd, stderr=stderr, universal_newlines=True)
     try:
         out = out.decode('utf-8')
     except AttributeError:  # python3, pragma: no cover
