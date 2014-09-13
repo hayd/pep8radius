@@ -20,16 +20,10 @@ From pip:
 $ pip install pep8radius
 ```
 
-Requirements
-------------
-pep8radius requires [autopep8](https://pypi.python.org/pypi/autopep8), which in turn requires [pep8](https://pypi.python.org/pypi/pep8). The docformatter option, to fix docstrings, requires [docformatter](https://pypi.python.org/pypi/docformatter).
-
-VCS Support
------------
-[Git](http://git-scm.com/), [Mecurial (hg)](http://mercurial.selenic.com/), [Bazaar](http://bazaar.canonical.com/en/). Please request support for other version control systems on [github](https://github.com/hayd/pep8radius/issues/5).
-
 Usage
 -----
+![Usage gif of pep8radius](https://cloud.githubusercontent.com/assets/1931852/4259885/18a7e75e-3b1a-11e4-9413-d92f9b170b70.gif)
+
 - Move to project directory
 - Make some changes to the project
 - Run `pep8radius --diff       # view a diff of proposed fixed`
@@ -39,19 +33,32 @@ Usage
 Against a branch you can use the same syntax as with git diff:
 
 ```sh
-$ pep8radius master   # branch name
+$ pep8radius master   # branch name to compare against (compares against merge-base)
 $ pep8radius c12166f  # commit hash
 
 $ pep8radius master --in-place  # these work with other options too
 ```
 
-You can also fix docstrings ([PEP257](http://legacy.python.org/dev/peps/pep-0257/)) using the [docformatter](https://pypi.python.org/pypi/docformatter) option:
+You can also fix docstrings ([PEP257](http://legacy.python.org/dev/peps/pep-0257/)) using
+the [docformatter](https://pypi.python.org/pypi/docformatter) option:
 
 ```sh
 $ pep8radius --docformatter --diff
 ```
 
 *Note: can also use `btyfi` alias for `pep8radius`.*
+
+Requirements
+------------
+pep8radius requires [autopep8](https://pypi.python.org/pypi/autopep8), which in turn
+requires [pep8](https://pypi.python.org/pypi/pep8). The docformatter option, to fix
+docstrings, requires [docformatter](https://pypi.python.org/pypi/docformatter).
+
+VCS Support
+-----------
+[Git](http://git-scm.com/), [Mecurial (hg)](http://mercurial.selenic.com/), (tentatively)
+[Bazaar](http://bazaar.canonical.com/en/). Please request support for other version
+control systems on [github](https://github.com/hayd/pep8radius/issues/5).
 
 Options
 -------
