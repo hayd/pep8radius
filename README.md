@@ -48,6 +48,14 @@ $ pep8radius --docformatter --diff
 
 *Note: can also use `btyfi` alias for `pep8radius`.*
 
+It can be nice to pipe the diff to [cdiff](https://pypi.python.org/pypi/cdiff) (which
+makes diffs pretty and has lots of options):
+
+```sh
+$ pep8radius --diff | cdiff
+$ pep8radius --diff | cdiff --side-by-side
+```
+
 Requirements
 ------------
 pep8radius requires [autopep8](https://pypi.python.org/pypi/autopep8), which in turn
