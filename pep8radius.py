@@ -623,7 +623,7 @@ def which_version_control():  # pragma: no cover
 
     # Not supported (yet)
     raise NotImplementedError("Unknown version control system, "
-                              "or you're in the project directory.")
+                              "or you're not in the project directory.")
 
 
 if __name__ == "__main__":  # pragma: no cover
