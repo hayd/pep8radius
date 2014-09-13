@@ -422,26 +422,26 @@ class Radius(object):
             return self.merge_base(rev, current)
 
     # abstract methods
-    def file_diff_cmd(self, file_name):
+    def file_diff_cmd(self, file_name):  # pragma: no cover
         raise AbstractMethodError()
 
-    def filenames_diff_cmd(self):
-        raise AbstractMethodError()
-
-    @staticmethod
-    def parse_diff_filenames(diff_files):
+    def filenames_diff_cmd(self):  # pragma: no cover
         raise AbstractMethodError()
 
     @staticmethod
-    def root_dir():
+    def parse_diff_filenames(diff_files):  # pragma: no cover
         raise AbstractMethodError()
 
     @staticmethod
-    def current_branch():
+    def root_dir():  # pragma: no cover
         raise AbstractMethodError()
 
     @staticmethod
-    def merge_base(rev1, rev2):
+    def current_branch():  # pragma: no cover
+        raise AbstractMethodError()
+
+    @staticmethod
+    def merge_base(rev1, rev2):  # pragma: no cover
         raise AbstractMethodError()
 
 
