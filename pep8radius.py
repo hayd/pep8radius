@@ -438,25 +438,20 @@ def line_numbers_from_file_udiff(udiff):
     Note: returned in descending order (as autopep8 can +- lines)
 
     """
-    chunks = re.split('\n@@[^\n]+\n', udiff)[:0:-1]
+    chunks = re.split('\n@@ [^\n]+\n', udiff)[:0:-1]
 
-    line_numbers = re.findall('(?<=@@\s[+-])\d+(?=,\d+)', udiff)
+    line_numbers = re.findall('@@\s[+-]\d+,\d+ \+(\d+)', udiff)
     line_numbers = list(map(int, line_numbers))[::-1]
 
     # Note: these were reversed as can modify number of lines
     for c, start in zip(chunks, line_numbers):
-        empty = [line.startswith(' ') or not line
-                 for line in c.splitlines()]
-        pre_padding = sum(1 for _ in takewhile(lambda b: b, empty))
-        post_padding = sum(1 for _ in takewhile(lambda b: b, empty[::-1]))
-
-        sub_lines = sum(line.startswith('-') for line in c.splitlines())
-        lines_in_range = len(c.splitlines()) - sub_lines - post_padding
-        # The lines_in_range are either added or remained the same between
-        # the padding line, we could be slightly fussier and return only
-        # the ranges of added lines, but chose not to.
-        yield (start + pre_padding,
-               start + lines_in_range - 1)
+        ilines = enumerate((line for line in c.splitlines()
+                                 if not line.startswith('-')),
+                           start=start)
+        ilines = ilines
+        added_lines = [i for i, line in ilines if line.startswith('+')]
+        if added_lines:
+            yield (added_lines[0], added_lines[-1])
 
 
 def udiff_lines_fixed(u):
