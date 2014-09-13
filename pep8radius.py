@@ -222,7 +222,7 @@ def _split_comma_separated(string):
     return set(filter(None, string.split(',')))
 
 
-class Radius:
+class Radius(object):
 
     def __init__(self, rev=None, options=None):
         # pep8radius specific options
@@ -416,6 +416,17 @@ class Radius:
             return current
         else:
             return self.merge_base(rev, current)
+
+    # abstract methods
+    # TODO something with these to appease landscape
+    # with_metaclass http://stackoverflow.com/a/18513858/1240268 ?
+    # six is a rather heavy dependency however
+    # def file_diff_cmd(self, file_name): pass
+    # def filenames_diff_cmd(self): pass
+    # def parse_diff_filenames(self, diff_files): pass
+    # def root_dir(self): pass
+    # def current_branch(self): pass
+    # def merge_base(self): pass
 
 
 # #####   udiff parsing   #####
