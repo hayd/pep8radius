@@ -51,6 +51,7 @@ except ImportError:  # pragma: no cover
                 self.cmd, self.returncode)
     subprocess.CalledProcessError = CalledProcessError
 
+
 class AbstractMethodError(NotImplementedError):
     pass
 
@@ -62,6 +63,7 @@ def shell_out(cmd, stderr=STDOUT):
     except AttributeError:  # python3, pragma: no cover
         pass
     return out.strip()
+
 
 def shell_out_ignore_exitcode(cmd, stderr=STDOUT):
     try:
@@ -421,12 +423,23 @@ class Radius(object):
             return self.merge_base(rev, current)
 
     # abstract methods
-    def file_diff_cmd(self, file_name): raise AbstractMethodError()
-    def filenames_diff_cmd(self): raise AbstractMethodError()
-    def parse_diff_filenames(self, diff_files): raise AbstractMethodError()
-    def root_dir(self): raise AbstractMethodError()
-    def current_branch(self): raise AbstractMethodError()
-    def merge_base(self): raise AbstractMethodError()
+    def file_diff_cmd(self, file_name):
+        raise AbstractMethodError()
+
+    def filenames_diff_cmd(self):
+        raise AbstractMethodError()
+
+    def parse_diff_filenames(self, diff_files):
+        raise AbstractMethodError()
+
+    def root_dir(self):
+        raise AbstractMethodError()
+
+    def current_branch(self):
+        raise AbstractMethodError()
+
+    def merge_base(self):
+        raise AbstractMethodError()
 
 
 # #####   udiff parsing   #####
@@ -446,7 +459,7 @@ def line_numbers_from_file_udiff(udiff):
     # Note: these were reversed as can modify number of lines
     for c, start in zip(chunks, line_numbers):
         ilines = enumerate((line for line in c.splitlines()
-                                 if not line.startswith('-')),
+                            if not line.startswith('-')),
                            start=start)
         ilines = ilines
         added_lines = [i for i, line in ilines if line.startswith('+')]
@@ -624,11 +637,11 @@ def which_version_control():  # pragma: no cover
     return git, hg, bzr or raise NotImplementedError.
 
     """
-    if using_hg():#TODO move down
-        return 'hg'
-
     if using_git():
         return 'git'
+
+    if using_hg():
+        return 'hg'
 
     if using_bzr():
         return 'bzr'
