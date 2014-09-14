@@ -75,7 +75,7 @@ def shell_out_ignore_exitcode(cmd, stderr=STDOUT):
         pass
     return out.strip()
 
-__version__ = version = '0.8.2a'
+__version__ = version = '0.8.2'
 
 
 DEFAULT_IGNORE = 'E24'
