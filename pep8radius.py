@@ -364,7 +364,7 @@ class Radius(object):
 
         # This may raise a CalledProcessError,
         # however it should already have been caught upon new.
-        root_dir = self.root_dir()
+        root_dir = os.path.abspath(self.root_dir())
         py_files_full = [os.path.join(root_dir,
                                       file_name)
                          for file_name in py_files]
