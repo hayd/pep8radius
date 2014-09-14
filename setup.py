@@ -27,10 +27,10 @@ def readme():
             return f.read()
 
 INSTALL_REQUIRES = (
-    ['autopep8 >= 1.0.2'] +
+    ['autopep8 >= 1.0.4'] +
     (['argparse'] if version_info < (2, 7) else []) +
     ['colorama'] +
-    ['docformatter >= 0.6.1']
+    ['docformatter >= 0.7']
 )
 
 setup(

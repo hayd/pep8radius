@@ -75,7 +75,7 @@ def shell_out_ignore_exitcode(cmd, stderr=STDOUT):
         pass
     return out.strip()
 
-__version__ = version = '0.8.2a'
+__version__ = version = '0.8.2'
 
 
 DEFAULT_IGNORE = 'E24'
@@ -364,7 +364,7 @@ class Radius(object):
 
         # This may raise a CalledProcessError,
         # however it should already have been caught upon new.
-        root_dir = self.root_dir()
+        root_dir = os.path.abspath(self.root_dir())
         py_files_full = [os.path.join(root_dir,
                                       file_name)
                          for file_name in py_files]
