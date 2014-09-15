@@ -46,16 +46,6 @@ class Radius(object):
         # that there's been an error with the version control command.
         self.filenames_diff = self.get_filenames_diff()
 
-    @staticmethod
-    def new(rev=None, options=None, vc=None):
-        """Create subclass instance of Radius with correct version control
-
-        e.g. RadiusGit if using git
-
-        """
-        # TODO delete
-        return Radius(rev=rev, options=options, vc=vc)
-
     def pep8radius(self):
         """PEP8 clean only the parts of the files which you have touched
         since the last commit, previous commit or branch.

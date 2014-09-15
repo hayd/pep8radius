@@ -69,7 +69,7 @@ class TestRadius(TestCase):
             f.write(modified)
 
         options.verbose = 1
-        r = Radius.new(vc=self.vc, options=options)
+        r = Radius(vc=self.vc, options=options)
         with captured_output() as (out, err):
             r.pep8radius()
         self.assertIn('would fix', out.getvalue())
@@ -77,7 +77,7 @@ class TestRadius(TestCase):
         options.verbose = 0
 
         options.diff = True
-        r = Radius.new(vc=self.vc, options=options)
+        r = Radius(vc=self.vc, options=options)
         with captured_output() as (out, err):
             r.pep8radius()
         exp_diff = get_diff(modified, expected, temp_file)
@@ -85,7 +85,7 @@ class TestRadius(TestCase):
         options.diff = False
 
         options.in_place = True
-        r = Radius.new(vc=self.vc, options=options)
+        r = Radius(vc=self.vc, options=options)
         # Run pep8radius
         r.pep8radius()
 
@@ -141,7 +141,7 @@ class MixinTests:
         # TODO for some reason this isn't capturing the output!
         with captured_output() as (out, err):
             self.assertRaises(CalledProcessError,
-                              lambda x: Radius.new(rev=x, vc=self.vc),
+                              lambda x: Radius(rev=x, vc=self.vc),
                               'random_junk_sha')
         os.chdir(self.original_dir)
 
@@ -156,7 +156,7 @@ class MixinTests:
         self._save('c=1', 'CCC.py')
 
         args = parse_args(['--diff', '--no-color'])
-        r = Radius.new(rev=start, options=args, vc=self.vc)
+        r = Radius(rev=start, options=args, vc=self.vc)
         with captured_output() as (out, err):
             r.pep8radius()
         diff = out.getvalue()

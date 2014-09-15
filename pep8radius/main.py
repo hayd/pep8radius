@@ -5,7 +5,7 @@ import signal
 import sys
 
 from pep8radius.radius import Radius
-from pep8radius.shell import (shell_out, shell_out_ignore_exitcode,
+from pep8radius.shell import (shell_out,
                               CalledProcessError) # with 2.6 compat
 
 __version__ = version = '0.9.0a'
@@ -41,7 +41,7 @@ def main(args=None, vc=None):
             sys.exit(0)
 
         try:
-            r = Radius.new(rev=args.rev, options=args, vc=vc)
+            r = Radius(rev=args.rev, options=args, vc=vc)
         except NotImplementedError as e:  # pragma: no cover
             print(e)
             sys.exit(1)
@@ -57,7 +57,8 @@ def main(args=None, vc=None):
         return 1
 
 
-def parse_args(arguments=None):
+def create_parser():
+    # TODO allow passing a config?
     description = ("PEP8 clean only the parts of the files which you have "
                    "touched since the last commit, previous commit or "
                    "branch.")
@@ -127,10 +128,14 @@ def parse_args(arguments=None):
     parser.add_argument('--force-wrap', action='store_true',
                         help='force descriptions to be wrapped even if it may '
                              'result in a mess; used by docformatter')
+    return parser
+
+def parse_args(arguments=None):
 
     if arguments is None:
         arguments = []
 
+    parser = create_parser()
     args = parser.parse_args(arguments)
 
     # sanity check args (from autopep8)

@@ -25,12 +25,12 @@ class TestRadiusNoVCS(TestCase):
 
     def test_bad_vc(self):
         self.assertRaises(NotImplementedError,
-                          lambda x: Radius.new(vc=x),
+                          lambda x: Radius(vc=x),
                           'made_up_vc')
 
     def test_unknown_vc(self):
         # we have pep8radius is uing git...
-        self.assertTrue(isinstance(Radius.new(vc='git').vc, Git))
+        self.assertTrue(isinstance(Radius(vc='git').vc, Git))
 
     def test_using_vc(self):
         MixinGit.delete_repo()
