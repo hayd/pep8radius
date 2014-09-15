@@ -1,3 +1,6 @@
+from __future__ import print_function
+
+import colorama
 from difflib import unified_diff
 import os
 import re
@@ -46,3 +49,36 @@ def get_diff(original, fixed, file_name,
         if not line.endswith(newline):
             text += newline + r'\ No newline at end of file' + newline
     return text
+
+def print_diff(options, diff, color=True):
+    if not options.diff or not diff:
+        return
+
+    if not color:
+        colorama.init = lambda autoreset: None
+        colorama.Fore.RED = ''
+        colorama.Back.RED = ''
+        colorama.Fore.GREEN = ''
+        colorama.deinit = lambda: None
+
+    colorama.init(autoreset=True)  # TODO use context_manager
+    for line in diff.splitlines():
+        if line.startswith('+') and not line.startswith('+++ '):
+            # Note there shouldn't be trailing whitespace
+            # but may be nice to generalise this
+            print(colorama.Fore.GREEN + line)
+        elif line.startswith('-') and not line.startswith('--- '):
+            split_whitespace = re.split('(\s+)$', line)
+            if len(split_whitespace) > 1:  # claim it must be 3
+                line, trailing, _ = split_whitespace
+            else:
+                line, trailing = split_whitespace[0], ''
+            print(colorama.Fore.RED + line, end='')
+            # give trailing whitespace a RED background
+            print(colorama.Back.RED + trailing)
+        elif line == '\ No newline at end of file':
+            # The assumption here is that there is now a new line...
+            print(colorama.Fore.RED + line)
+        else:
+            print(line)
+    colorama.deinit()

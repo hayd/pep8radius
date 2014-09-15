@@ -1,5 +1,7 @@
+from __future__ import absolute_import
+
 import autopep8
-from util import *
+from tests.util import *
 
 class TestRadiusNoVCS(TestCase):
 

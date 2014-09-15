@@ -1,4 +1,6 @@
-from util import *
+from __future__ import absolute_import
+
+from tests.util import *
 
 # TODO read diffs from files
 class TestUDiffParsing(TestCase):

@@ -2,22 +2,20 @@ from __future__ import absolute_import, print_function
 
 import autopep8
 import codecs
-import colorama
 import docformatter
 import glob
 import os
-import re
 import sys
 
-from pep8radius.diff import line_numbers_from_file_udiff, get_diff, udiff_lines_fixed
+from pep8radius.diff import (line_numbers_from_file_udiff, get_diff,
+                             udiff_lines_fixed, print_diff)
 from pep8radius.shell import (shell_out, shell_out_ignore_exitcode,
                               CalledProcessError)# with 2.6 compat
 from pep8radius.vcs import VersionControl
 
 
-class AbstractMethodError(NotImplementedError):
-    pass
-
+if sys.version_info[0] > 2:  # py3, pragma: no cover
+    basestring = str
 
 class Radius(object):
 
@@ -90,7 +88,7 @@ class Radius(object):
 
         if self.diff:
             for diff in pep8_diffs:
-                self.print_diff(diff, color=self.color)
+                print_diff(self, diff, color=self.color)
 
     def pep8radius_file(self, file_name):
         """Apply autopep8 to the diff lines of a file.
@@ -177,38 +175,3 @@ class Radius(object):
         if min_ <= self.verbose <= max_:
             print(something_to_print, end=end)
             sys.stdout.flush()
-
-    def print_diff(self, diff, color=True):
-        if not self.diff or not diff:
-            return
-
-        if not color:
-            colorama.init = lambda autoreset: None
-            colorama.Fore.RED = ''
-            colorama.Back.RED = ''
-            colorama.Fore.GREEN = ''
-            colorama.deinit = lambda: None
-
-        colorama.init(autoreset=True)  # TODO use context_manager
-        for line in diff.splitlines():
-            if line.startswith('+') and not line.startswith('+++ '):
-                # Note there shouldn't be trailing whitespace
-                # but may be nice to generalise this
-                print(colorama.Fore.GREEN + line)
-            elif line.startswith('-') and not line.startswith('--- '):
-                split_whitespace = re.split('(\s+)$', line)
-                if len(split_whitespace) > 1:  # claim it must be 3
-                    line, trailing, _ = split_whitespace
-                else:
-                    line, trailing = split_whitespace[0], ''
-                print(colorama.Fore.RED + line, end='')
-                # give trailing whitespace a RED background
-                print(colorama.Back.RED + trailing)
-            elif line == '\ No newline at end of file':
-                # The assumption here is that there is now a new line...
-                print(colorama.Fore.RED + line)
-            else:
-                print(line)
-        colorama.deinit()
-
-

@@ -4,6 +4,10 @@ import re
 from pep8radius.shell import (shell_out, shell_out_ignore_exitcode,
                               CalledProcessError)# with 2.6 compat
 
+class AbstractMethodError(NotImplementedError):
+    pass
+
+
 def using_git():
     try:
         git_log = shell_out(["git", "log"])

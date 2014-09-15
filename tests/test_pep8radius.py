@@ -1,4 +1,5 @@
-from util import *
+from __future__ import absolute_import
+from tests.util import *
 
 try:
     os.mkdir(TEMP_DIR)
