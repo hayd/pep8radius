@@ -1,39 +1,5 @@
-from __future__ import absolute_import
-import autopep8
-from contextlib import contextmanager
-import os
-from shutil import rmtree
-import sys
-import errno
-import stat
+from util import *
 
-try:
-    from StringIO import StringIO
-except ImportError:
-    from io import StringIO
-
-if sys.version_info < (2, 7):
-    from unittest2 import main, SkipTest, TestCase
-else:
-    from unittest import main, SkipTest, TestCase
-
-
-ROOT_DIR = os.path.split(os.path.abspath(os.path.dirname(__file__)))[0]
-sys.path.insert(0, ROOT_DIR)
-from pep8radius import (Radius, RadiusGit, RadiusHg, RadiusBzr,
-                        shell_out, CalledProcessError,
-                        main,
-                        parse_args,
-                        line_numbers_from_file_udiff,
-                        which_version_control,
-                        using_git, using_hg, using_bzr,
-                        version, get_diff)
-
-PEP8RADIUS = os.path.join(ROOT_DIR, 'pep8radius.py')
-
-TEMP_DIR = os.path.join(os.path.abspath(os.path.dirname(__file__)),
-                        'temp')
-SUBTEMP_DIR = os.path.join(TEMP_DIR, 'subtemp')
 try:
     os.mkdir(TEMP_DIR)
 except OSError:
@@ -44,157 +10,12 @@ try:
 except OSError:
     pass
 
-@contextmanager
-def captured_output():
-    new_out, new_err = StringIO(), StringIO()
-    old_out, old_err = sys.stdout, sys.stderr
-    try:
-        sys.stdout, sys.stderr = new_out, new_err
-        yield sys.stdout, sys.stderr
-    finally:
-        sys.stdout, sys.stderr = old_out, old_err
-
-def pep8radius_main(args, vc=None):
-    if isinstance(args, list):
-        args = parse_args(args)
-    with captured_output() as (out, err):
-        try:
-            main(args, vc=vc)
-        except SystemExit:
-            pass
-    return out.getvalue().strip()
-
-
-# TODO should probably sep into different test file, and read from files
-class TestUDiffParsing(TestCase):
-    def test_udiff_parsing(self):
-        example_udiff = """@@ -51,6 +51,9 @@ except ImportError:  # pragma: no cover
-                 self.cmd, self.returncode)
-     subprocess.CalledProcessError = CalledProcessError
-
-+class AbstractMethodError(NotImplementedError):
-+    pass
-+
-
- def shell_out(cmd, stderr=STDOUT):
-     out = check_output(cmd, stderr=stderr, universal_newlines=True)
-@@ -418,15 +421,12 @@ class Radius(object):
-             return self.merge_base(rev, current)
-
-     # abstract methods
--    # TODO something with these to appease landscape
--    # with_metaclass http://stackoverflow.com/a/18513858/1240268 ?
--    # six is a rather heavy dependency however
--    # def file_diff_cmd(self, file_name): pass
--    # def filenames_diff_cmd(self): pass
--    # def parse_diff_filenames(self, diff_files): pass
--    # def root_dir(self): pass
--    # def current_branch(self): pass
--    # def merge_base(self): pass
-+    def file_diff_cmd(self, file_name): raise AbstractMethodError()
-+    def filenames_diff_cmd(self): raise AbstractMethodError()
-+    def parse_diff_filenames(self, diff_files): raise AbstractMethodError()
-+    def root_dir(self): raise AbstractMethodError()
-+    def current_branch(self): raise AbstractMethodError()
-+    def merge_base(self): raise AbstractMethodError()
-
-
- # #####   udiff parsing   #####
-@@ -441,6 +441,7 @@ def line_numbers_from_file_udiff(udiff):
-     chunks = re.split('\n@@[^\n]+\n', udiff)[:0:-1]
-
-     line_numbers = re.findall('(?<=@@\s[+-])\d+(?=,\d+)', udiff)
-+    import pdb; pdb.set_trace()
-     line_numbers = list(map(int, line_numbers))[::-1]
-
-     # Note: these were reversed as can modify number of lines
-"""
-        lines = list(line_numbers_from_file_udiff(example_udiff))
-        assert(lines == [(447, 447), (424, 429)])
-
-class TestRadiusNoVCS(TestCase):
-
-    def __init__(self, *args, **kwargs):
-        self.original_dir = os.getcwd()
-        super(TestRadiusNoVCS, self).__init__(*args, **kwargs)
-
-    def setUp(self):
-        os.chdir(TEMP_DIR)
-
-    def tearDown(self):
-        os.chdir(self.original_dir)
-
-    def test_no_vc(self):
-        TestRadiusGit.delete_repo()
-        TestRadiusHg.delete_repo()
-
-        # self.assertRaises(NotImplementedError, which_version_control)
-        # This see the above repo, which is pep8radius and using git !
-        pass
-
-    def test_bad_vc(self):
-        self.assertRaises(NotImplementedError,
-                          lambda x: Radius.new(vc=x),
-                          'made_up_vc')
-
-    def test_unknown_vc(self):
-        # we have pep8radius is uing git...
-        self.assertTrue(isinstance(Radius.new(None), RadiusGit))
-
-    def test_using_vc(self):
-        TestRadiusGit.delete_repo()
-        TestRadiusHg.delete_repo()
-        TestRadiusBzr.delete_repo()
-
-        self.assertFalse(using_hg())
-        if TestRadiusHg.create_repo():
-            self.assertTrue(using_hg())
-
-        self.assertFalse(using_bzr())
-        if TestRadiusBzr.create_repo():
-            self.assertTrue(using_bzr())
-
-        # git is seen before this, as the dir above is git!
-        self.assertTrue(using_git())
-
-    def test_autopep8_args(self):
-        # TODO see that these are passes on (use a static method in Radius?)
-
-        args = ['hello.py']
-        us = parse_args(args)
-        them = autopep8.parse_args(args)
-
-        # API change in autopep8, these are now sets rather than lists
-        self.assertEqual(us.select, them.select)
-        self.assertEqual(us.ignore, them.ignore)
-
-        args = ['hello.py', '--select=E1,W1', '--ignore=W601',
-                '--max-line-length', '120']
-        us = parse_args(args)
-        them = autopep8.parse_args(args)
-        self.assertEqual(us.select, them.select)
-        self.assertEqual(us.ignore, them.ignore)
-        self.assertEqual(us.max_line_length, them.max_line_length)
-
-        args = ['hello.py', '--aggressive', '-v']
-        us = parse_args(args)
-        them = autopep8.parse_args(args)
-        self.assertEqual(us.aggressive, them.aggressive)
-
-    def test_version_number(self):
-        version_ = pep8radius_main(['--version'])
-        self.assertEqual(version_, version)
-
-    def test_list_fixes(self):
-        fixes = pep8radius_main(['--list-fixes'])
-        afixes = shell_out(['autopep8', '--list-fixes'])
-        self.assertEqual(fixes, afixes)
-
 
 class TestRadius(TestCase):
 
     def __init__(self, *args, **kwargs):
         self.original_dir = os.getcwd()
+        os.chdir(TEMP_DIR)
         self.using_vc = self.init_vc()
         super(TestRadius, self).__init__(*args, **kwargs)
 
@@ -202,7 +23,6 @@ class TestRadius(TestCase):
         os.chdir(self.original_dir)
 
     def init_vc(self):
-        os.chdir(TEMP_DIR)
         self.delete_repo()
         success = self.create_repo()
         committed = self._save_and_commit('a=1;', 'a.py')
@@ -211,19 +31,15 @@ class TestRadius(TestCase):
 
     def setUp(self):
         os.chdir(TEMP_DIR)
-        if not self.using_vc:
+        success = self.init_vc()
+        if not success:
             raise SkipTest("%s not available" % self.vc)
-
-
-    @classmethod
-    def _save_and_commit(cls, contents, f):
-        cls._save(contents, f)
-        return cls.successfully_commit_files([f])
 
     @staticmethod
     def _save(contents, f):
-        with open(f, 'w') as f1:
-            f1.write(contents)
+        with from_dir(TEMP_DIR):
+            with open(f, 'w') as f1:
+                f1.write(contents)
 
     @staticmethod
     def get_diff_many(modified, expected, files):
@@ -354,125 +170,17 @@ class MixinTests:
         # TODO test the diff is correct
 
 
-class TestRadiusGit(TestRadius, MixinTests):
+class TestRadiusGit(TestRadius, MixinGit, MixinTests):
     vc = 'git'
 
-    @staticmethod
-    def delete_repo():
-        try:
-            temp_path = os.path.join(TEMP_DIR, '.git')
-            rmtree(temp_path)
-        except OSError as e: # pragma: no cover
-        # see http://stackoverflow.com/questions/1213706/what-user-do-python-scripts-run-as-in-windows and http://stackoverflow.com/questions/7228296/permission-change-of-files-in-python
-            if e.errno == errno.EACCES:
-                for dirpath, dirnames, filenames in os.walk(temp_path):
-                    for filename in filenames:
-                        os.chmod(
-                            os.path.join(dirpath, filename), stat.S_IWRITE)
-                rmtree(temp_path)
 
-
-    @staticmethod
-    def create_repo():
-        os.chdir(TEMP_DIR)
-        try:
-            shell_out(["git", "init"])
-            return True
-        except (OSError, CalledProcessError):
-            return False
-
-    @staticmethod
-    def successfully_commit_files(file_names,
-                                  commit="initial_commit"):
-        os.chdir(TEMP_DIR)
-        try:
-            shell_out(["git", "add"] + file_names)
-            shell_out(["git", "commit", "-m", commit])
-            return RadiusGit.current_branch()
-        except (OSError, CalledProcessError):
-            return False
-
-    @staticmethod
-    def checkout(branch, create=False):
-        if create:
-            shell_out(["git", "checkout", '-b', branch])
-        else:
-            shell_out(["git", "checkout", branch])
-
-
-class TestRadiusHg(TestRadius, MixinTests):
+class TestRadiusHg(TestRadius, MixinHg, MixinTests):
     vc = 'hg'
 
-    @staticmethod
-    def delete_repo():
-        try:
-            rmtree(os.path.join(TEMP_DIR, '.hg'))
-        except OSError:
-            pass
 
-    @staticmethod
-    def create_repo():
-        os.chdir(TEMP_DIR)
-        try:
-            shell_out(["hg", "init"])
-            return True
-        except (OSError, CalledProcessError):
-            return False
-
-    @staticmethod
-    def successfully_commit_files(file_names,
-                                  commit="initial_commit"):
-        os.chdir(TEMP_DIR)
-        try:
-            shell_out(["hg", "add"] + file_names)
-            shell_out(["hg", "commit", "-m", commit])
-            return RadiusHg.current_branch()
-        except (OSError, CalledProcessError):
-            return False
-
-    @staticmethod
-    def checkout(branch, create=False):
-        if create:
-            shell_out(["hg", "branch", branch])
-        else:
-            shell_out(["hg", "update", "--check", branch])
-
-
-class TestRadiusBzr(TestRadius, MixinTests):
+class TestRadiusBzr(TestRadius, MixinBzr, MixinTests):
     vc = 'bzr'
-
-    @staticmethod
-    def delete_repo():
-        try:
-            rmtree(os.path.join(TEMP_DIR, '.bzr'))
-        except OSError:
-            pass
-
-    @staticmethod
-    def create_repo():
-        os.chdir(TEMP_DIR)
-        try:
-            shell_out(["bzr", "init"])
-            return True
-        except (OSError, CalledProcessError):
-            return False
-
-    @staticmethod
-    def successfully_commit_files(file_names,
-                                  commit="initial_commit"):
-        os.chdir(TEMP_DIR)
-        try:
-            shell_out(["bzr", "add"] + file_names)
-            shell_out(["bzr", "commit", "-m", commit])
-            return RadiusBzr.current_branch()
-        except (OSError, CalledProcessError):
-            return False
-
-    @staticmethod
-    def checkout(branch, create=False):
-        create = ['--create-branch'] if create else []
-        shell_out(["bzr", "switch", branch] + create)
 
 
 if __name__ == '__main__':
-    main()
+    test_main()

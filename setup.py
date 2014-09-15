@@ -13,7 +13,8 @@ NAME = 'pep8radius' #  'Better-Than-You-Found-It'
 def version():
     """Return version string."""
     with open(os.path.join(os.path.abspath(os.path.dirname(__file__)),
-                           'pep8radius.py')) as input_file:
+                           'pep8radius',
+                           'main.py')) as input_file:
         for line in input_file:
             if line.startswith('__version__'):
                 return parse(line).body[0].value.s
@@ -44,7 +45,7 @@ setup(
     author_email='andyhayden1@gmail.com',
     url='https://github.com/hayd/pep8radius',
     classifiers=[
-        'Development Status :: 3 - Alpha',
+        'Development Status :: 4 - Beta',
         'Environment :: Console',
         'Intended Audience :: Developers',
         'License :: OSI Approved :: MIT License',
@@ -59,11 +60,12 @@ setup(
         'Programming Language :: Python :: 3.4',
         'Topic :: Software Development :: Libraries :: Python Modules',
         'Topic :: Software Development :: Quality Assurance',
+        'Topic :: Software Development :: Version Control',
     ],
-    keywords='automation, pep8, format, autopep8, git, hg, mercurial',
+    keywords='automation, pep8, format, autopep8, git, hg, mercurial, bzr',
     install_requires=INSTALL_REQUIRES,
-    test_suite='tests.test_pep8radius',
-    py_modules=['pep8radius'],
+    packages=['pep8radius'],
+    test_suite='tests',
     zip_safe=False,
     entry_points={'console_scripts': ['btyfi = pep8radius:main',
                                       'pep8radius = pep8radius:main']},
