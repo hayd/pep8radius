@@ -1,5 +1,3 @@
-import os
-
 try:
     from subprocess import STDOUT, check_output, CalledProcessError
 except ImportError:  # pragma: no cover
@@ -41,18 +39,22 @@ except ImportError:  # pragma: no cover
 
 
 def shell_out(cmd, stderr=STDOUT, cwd=None):
+    """Friendlier version of check_output."""
     if cwd is None:
-        cwd = os.getcwd() # TODO do I need to normalize this on Windows
+        from os import getcwd
+        cwd = getcwd()  # TODO do I need to normalize this on Windows
 
     out = check_output(cmd, cwd=cwd, stderr=stderr, universal_newlines=True)
     return _clean_output(out)
 
 
 def shell_out_ignore_exitcode(cmd, stderr=STDOUT, cwd=None):
+    """Same as shell_out but doesn't raise if the cmd exits badly."""
     try:
         return shell_out(cmd, stderr=stderr, cwd=cwd)
     except CalledProcessError as c:
         return _clean_output(c.output)
+
 
 def _clean_output(out):
     try:

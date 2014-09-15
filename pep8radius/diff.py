@@ -1,11 +1,10 @@
 from __future__ import print_function
 
-import colorama
-from difflib import unified_diff
 import os
 import re
 
-def line_numbers_from_file_udiff(udiff):
+
+def modified_lines_from_udiff(udiff):
     """Parse a udiff, return iterator of tuples of (start, end) line numbers.
 
     Note: returned in descending order (as autopep8 can +- lines)
@@ -33,11 +32,14 @@ def udiff_lines_fixed(u):
     removed_changes = re.findall('\n\-', u)
     return len(removed_changes)
 
+
 def get_diff(original, fixed, file_name,
              original_label='original', fixed_label='fixed'):
     """Return text of unified diff between original and fixed."""
     original, fixed = original.splitlines(True), fixed.splitlines(True)
     newline = '\n'
+
+    from difflib import unified_diff
     diff = unified_diff(original, fixed,
                         os.path.join(file_name, original_label),
                         os.path.join(file_name, fixed_label),
@@ -50,8 +52,11 @@ def get_diff(original, fixed, file_name,
             text += newline + r'\ No newline at end of file' + newline
     return text
 
-def print_diff(options, diff, color=True):
-    if not options.diff or not diff:
+
+def print_diff(diff, color=True):
+    import colorama
+
+    if not diff:
         return
 
     if not color:

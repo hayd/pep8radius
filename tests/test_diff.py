@@ -1,9 +1,10 @@
-from __future__ import absolute_import
-
 from tests.util import *
 
 # TODO read diffs from files
+
+
 class TestUDiffParsing(TestCase):
+
     def test_udiff_parsing(self):
         example_udiff = """@@ -51,6 +51,9 @@ except ImportError:  # pragma: no cover
                  self.cmd, self.returncode)
@@ -46,7 +47,7 @@ class TestUDiffParsing(TestCase):
 
      # Note: these were reversed as can modify number of lines
 """
-        lines = list(line_numbers_from_file_udiff(example_udiff))
+        lines = list(modified_lines_from_udiff(example_udiff))
         assert(lines == [(447, 447), (424, 429)])
 
 

@@ -2,7 +2,8 @@ import os
 import re
 
 from pep8radius.shell import (shell_out, shell_out_ignore_exitcode,
-                              CalledProcessError)# with 2.6 compat
+                              CalledProcessError)  # with 2.6 compat
+
 
 class AbstractMethodError(NotImplementedError):
     pass
@@ -33,10 +34,9 @@ def using_bzr():
 
 
 class VersionControl(object):
-    def __init__(self, root=None):
-        if root is None:
-            root = self.root_dir()
-        self.root = root
+
+    def __init__(self, cwd=None):
+        self.root = os.path.abspath(self.root_dir(cwd=cwd))
 
     def _shell_out(self, *args, **kwargs):
         return shell_out(*args, cwd=self.root, **kwargs)
@@ -44,8 +44,12 @@ class VersionControl(object):
     @staticmethod
     def from_string(vc):
         try:
-            return globals()[vc.title()]
-        except KeyError:
+            # Note: this means all version controls must have
+            # a title naming convention (!)
+            vc = globals()[vc.title()]
+            assert(issubclass(vc, VersionControl))
+            return vc
+        except (KeyError, AssertionError):
             raise NotImplementedError("Unknown version control system.")
 
     @staticmethod
@@ -92,6 +96,38 @@ class VersionControl(object):
             return current
         else:
             return self.merge_base(rev, current)
+
+    def modified_lines(self, r, file_name):
+        cmd = self.file_diff_cmd(r, file_name)
+        diff = shell_out_ignore_exitcode(cmd, cwd=self.root)
+        return self.modified_lines_from_diff(diff)
+
+    def modified_lines_from_diff(self, diff):
+        """Potentially this is vc specific (if not using udiff)
+
+        Note: this is in descending order.
+        """
+        from pep8radius.diff import modified_lines_from_udiff
+        for start, end in modified_lines_from_udiff(diff):
+            yield start, end
+
+    def get_filenames_diff(self, r):
+        "Get the py files which have been changed since rev"
+        cmd = self.filenames_diff_cmd(r)
+
+        diff_files = shell_out_ignore_exitcode(cmd, cwd=self.root)
+        diff_files = self.parse_diff_filenames(diff_files)
+
+        py_files = set(f for f in diff_files if f.endswith('.py'))
+
+        if r.options.exclude:
+            # TODO do we have to take this from root dir?
+            from glob import fnmatch
+            for pattern in r.options.exclude:
+                py_files.difference_update(fnmatch.filter(py_files, pattern))
+        return sorted(os.path.join(self.root, file_name)
+                      for file_name in py_files)
+
 
 class Git(VersionControl):
 
@@ -173,7 +209,7 @@ class Bzr(VersionControl):
 
         output = shell_out_ignore_exitcode(['bzr', 'find-merge-base',
                                             rev1, rev2],
-                                            cwd=self.root)
+                                           cwd=self.root)
         # 'merge base is revision name@example.com-20140602232408-d3wspoer3m35'
         return output.rsplit(' ', 1)[1]
 

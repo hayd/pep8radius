@@ -1,21 +1,11 @@
-from __future__ import absolute_import
 from tests.util import *
-
-try:
-    os.mkdir(TEMP_DIR)
-except OSError:
-    pass
-
-try:
-    os.mkdir(SUBTEMP_DIR)
-except OSError:
-    pass
 
 
 class TestRadius(TestCase):
 
     def __init__(self, *args, **kwargs):
         self.original_dir = os.getcwd()
+        mk_temp_dirs()
         os.chdir(TEMP_DIR)
         self.using_vc = self.init_vc()
         super(TestRadius, self).__init__(*args, **kwargs)
@@ -71,7 +61,7 @@ class TestRadius(TestCase):
         options.verbose = 1
         r = Radius(vc=self.vc, options=options)
         with captured_output() as (out, err):
-            r.pep8radius()
+            r.fix()
         self.assertIn('would fix', out.getvalue())
         self.assertNotIn('@@', out.getvalue())
         options.verbose = 0
@@ -79,7 +69,7 @@ class TestRadius(TestCase):
         options.diff = True
         r = Radius(vc=self.vc, options=options)
         with captured_output() as (out, err):
-            r.pep8radius()
+            r.fix()
         exp_diff = get_diff(modified, expected, temp_file)
         self.assert_equal(out.getvalue(), exp_diff, test_name)
         options.diff = False
@@ -87,7 +77,7 @@ class TestRadius(TestCase):
         options.in_place = True
         r = Radius(vc=self.vc, options=options)
         # Run pep8radius
-        r.pep8radius()
+        r.fix()
 
         with open(temp_file, 'r') as f:
             result = f.read()
@@ -158,7 +148,7 @@ class MixinTests:
         args = parse_args(['--diff', '--no-color'])
         r = Radius(rev=start, options=args, vc=self.vc)
         with captured_output() as (out, err):
-            r.pep8radius()
+            r.fix()
         diff = out.getvalue()
 
         files = [os.path.join(TEMP_DIR, f) for f in ['BBB.py', 'CCC.py']]

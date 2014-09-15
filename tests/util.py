@@ -1,4 +1,4 @@
-from __future__ import absolute_import, with_statement
+from __future__ import with_statement
 
 from contextlib import contextmanager
 import errno
@@ -24,7 +24,7 @@ from pep8radius import (Radius,
                         main,
                         parse_args,
                         version)
-from pep8radius.diff import line_numbers_from_file_udiff, get_diff
+from pep8radius.diff import modified_lines_from_udiff, get_diff
 from pep8radius.shell import CalledProcessError
 from pep8radius.vcs import (VersionControl, Git, Bzr, Hg,
                             using_git, using_hg, using_bzr)
@@ -45,6 +45,7 @@ def captured_output():
     finally:
         sys.stdout, sys.stderr = old_out, old_err
 
+
 @contextmanager
 def from_dir(cwd):
     curdir = os.getcwd()
@@ -53,6 +54,7 @@ def from_dir(cwd):
         yield
     finally:
         os.chdir(curdir)
+
 
 def pep8radius_main(args, vc=None):
     if isinstance(args, list):
@@ -65,11 +67,26 @@ def pep8radius_main(args, vc=None):
     return out.getvalue().strip()
 
 
+def mk_temp_dirs():
+    try:
+        os.mkdir(TEMP_DIR)
+    except OSError:
+        pass
+
+    try:
+        os.mkdir(SUBTEMP_DIR)
+    except OSError:
+        pass
+
+
+# Some additional vcs funtionality not provided in pep8radius
 class MixinVcs(object):
+
     @classmethod
     def _save_and_commit(cls, contents, f):
         cls._save(contents, f)
         return cls.successfully_commit_files([f])
+
 
 class MixinGit(MixinVcs):
 
@@ -78,8 +95,9 @@ class MixinGit(MixinVcs):
         try:
             temp_path = os.path.join(TEMP_DIR, '.git')
             rmtree(temp_path)
-        except OSError as e: # pragma: no cover
-        # see http://stackoverflow.com/questions/1213706/what-user-do-python-scripts-run-as-in-windows and http://stackoverflow.com/questions/7228296/permission-change-of-files-in-python
+        except OSError as e:  # pragma: no cover
+            # see http://stackoverflow.com/questions/1213706/
+            # and http://stackoverflow.com/questions/7228296/
             if e.errno == errno.EACCES:
                 import stat
                 for dirpath, dirnames, filenames in os.walk(temp_path):

@@ -1,12 +1,12 @@
-from __future__ import absolute_import
-
 import autopep8
 from tests.util import *
+
 
 class TestRadiusNoVCS(TestCase):
 
     def __init__(self, *args, **kwargs):
         self.original_dir = os.getcwd()
+        mk_temp_dirs()
         super(TestRadiusNoVCS, self).__init__(*args, **kwargs)
 
     def setUp(self):
@@ -49,6 +49,8 @@ class TestRadiusNoVCS(TestCase):
         self.assertTrue(using_git())
 
     def test_autopep8_args(self):
+        import autopep8
+
         # TODO see that these are passes on (use a static method in Radius?)
 
         args = ['hello.py']

@@ -1,12 +1,7 @@
-from __future__ import absolute_import, print_function
-
-import argparse
-import signal
-import sys
+from __future__ import print_function
 
 from pep8radius.radius import Radius
-from pep8radius.shell import (shell_out,
-                              CalledProcessError) # with 2.6 compat
+from pep8radius.shell import CalledProcessError  # with 2.6 compat
 
 __version__ = version = '0.9.0a'
 
@@ -15,8 +10,10 @@ DEFAULT_IGNORE = 'E24'
 DEFAULT_INDENT_SIZE = 4
 
 
-
 def main(args=None, vc=None):
+    import signal
+    import sys
+
     try:  # pragma: no cover
         # Exit on broken pipe.
         signal.signal(signal.SIGPIPE, signal.SIG_DFL)
@@ -51,13 +48,15 @@ def main(args=None, vc=None):
             print(output)
             sys.exit(c.returncode)
 
-        r.pep8radius()
+        r.fix()
 
     except KeyboardInterrupt:  # pragma: no cover
         return 1
 
 
 def create_parser():
+    import argparse
+
     # TODO allow passing a config?
     description = ("PEP8 clean only the parts of the files which you have "
                    "touched since the last commit, previous commit or "
@@ -129,6 +128,7 @@ def create_parser():
                         help='force descriptions to be wrapped even if it may '
                              'result in a mess; used by docformatter')
     return parser
+
 
 def parse_args(arguments=None):
 
