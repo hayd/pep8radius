@@ -160,6 +160,14 @@ class MixinTests:
 
         # TODO test the diff is correct
 
+    def test_deleted_file(self):
+        os.remove(os.path.join(TEMP_DIR, 'a.py'))
+        args = parse_args(['--diff', '--no-color'])
+        r = Radius(options=args, vc=self.vc, cwd=TEMP_DIR)
+        with captured_output() as (out, err):
+            diff = r.fix()
+        self.assertEqual(diff, None)
+
 
 class TestRadiusGit(TestRadius, MixinGit, MixinTests):
     vc = 'git'
