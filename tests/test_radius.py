@@ -13,24 +13,13 @@ class TestRadius(TestCase):
     def tearDown(self):
         os.chdir(self.original_dir)
 
-    def init_vc(self):
-        self.delete_repo()
-        success = self.create_repo()
-        committed = self._save_and_commit('a=1;', 'a.py')
-        os.chdir(self.original_dir)
-        return success and committed
+
 
     def setUp(self):
         os.chdir(TEMP_DIR)
         success = self.init_vc()
         if not success:
             raise SkipTest("%s not configured correctly" % self.vc)
-
-    @staticmethod
-    def _save(contents, f):
-        with from_dir(TEMP_DIR):
-            with open(f, 'w') as f1:
-                f1.write(contents)
 
     @staticmethod
     def get_diff_many(modified, expected, files):
@@ -139,11 +128,11 @@ class MixinTests:
         if self.vc == 'bzr':
             raise SkipTest("TODO get me working")
 
-        start = self._save_and_commit('a=1;', 'AAA.py')
+        start = self.save_and_commit('a=1;', 'AAA.py')
         self.checkout('ter', create=True)
-        self._save_and_commit('b=1;', 'BBB.py')
-        tip = self._save_and_commit('c=1;', 'CCC.py')
-        self._save('c=1', 'CCC.py')
+        self.save_and_commit('b=1;', 'BBB.py')
+        tip = self.save_and_commit('c=1;', 'CCC.py')
+        save('c=1', 'CCC.py')
 
         args = parse_args(['--diff', '--no-color'])
         r = Radius(rev=start, options=args, vc=self.vc)
@@ -167,18 +156,6 @@ class MixinTests:
         with captured_output() as (out, err):
             diff = r.fix()
         self.assertEqual(diff, None)
-
-
-class TestRadiusGit(TestRadius, MixinGit, MixinTests):
-    vc = 'git'
-
-
-class TestRadiusHg(TestRadius, MixinHg, MixinTests):
-    vc = 'hg'
-
-
-class TestRadiusBzr(TestRadius, MixinBzr, MixinTests):
-    vc = 'bzr'
 
 
 if __name__ == '__main__':

@@ -67,6 +67,6 @@ setup(
     packages=['pep8radius'],
     test_suite='tests',
     zip_safe=False,
-    entry_points={'console_scripts': ['btyfi = pep8radius:main',
-                                      'pep8radius = pep8radius:main']},
+    entry_points={'console_scripts': ['btyfi = pep8radius.main:main',
+                                      'pep8radius = pep8radius.main:main']},
 )

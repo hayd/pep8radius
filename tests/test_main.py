@@ -2,51 +2,7 @@ import autopep8
 from tests.util import *
 
 
-class TestRadiusNoVCS(TestCase):
-
-    def __init__(self, *args, **kwargs):
-        self.original_dir = os.getcwd()
-        mk_temp_dirs()
-        super(TestRadiusNoVCS, self).__init__(*args, **kwargs)
-
-    def setUp(self):
-        os.chdir(TEMP_DIR)
-
-    def tearDown(self):
-        os.chdir(self.original_dir)
-
-    def test_no_vc(self):
-        MixinGit.delete_repo()
-        MixinHg.delete_repo()
-
-        # self.assertRaises(NotImplementedError, VersionControl.which)
-        # This see the above repo, which is pep8radius and using git !
-        pass
-
-    def test_bad_vc(self):
-        self.assertRaises(NotImplementedError,
-                          lambda x: Radius(vc=x),
-                          'made_up_vc')
-
-    def test_unknown_vc(self):
-        # we have pep8radius is uing git...
-        self.assertTrue(isinstance(Radius(vc='git').vc, Git))
-
-    def test_using_vc(self):
-        MixinGit.delete_repo()
-        MixinHg.delete_repo()
-        MixinBzr.delete_repo()
-
-        self.assertFalse(using_hg())
-        if MixinHg.create_repo():
-            self.assertTrue(using_hg())
-
-        self.assertFalse(using_bzr())
-        if MixinBzr.create_repo():
-            self.assertTrue(using_bzr())
-
-        # git is seen before this, as the dir above is git!
-        self.assertTrue(using_git())
+class TestMain(TestCase):
 
     def test_autopep8_args(self):
         import autopep8
