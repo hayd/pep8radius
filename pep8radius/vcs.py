@@ -90,7 +90,7 @@ class VersionControl(object):
     def merge_base(rev1, rev2):  # pragma: no cover
         raise AbstractMethodError()
 
-    def _branch_point(self, rev=None):
+    def branch_point(self, rev=None):
         current = self.current_branch()
         if rev is None:
             return current

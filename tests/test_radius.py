@@ -18,13 +18,13 @@ class TestRadius(TestCase):
         success = self.create_repo()
         committed = self._save_and_commit('a=1;', 'a.py')
         os.chdir(self.original_dir)
-        return success
+        return success and committed
 
     def setUp(self):
         os.chdir(TEMP_DIR)
         success = self.init_vc()
         if not success:
-            raise SkipTest("%s not available" % self.vc)
+            raise SkipTest("%s not configured correctly" % self.vc)
 
     @staticmethod
     def _save(contents, f):
@@ -137,7 +137,7 @@ class MixinTests:
 
     def test_earlier_revision(self):
         if self.vc == 'bzr':
-            raise SkipTest()
+            raise SkipTest("TODO get me working")
 
         start = self._save_and_commit('a=1;', 'AAA.py')
         self.checkout('ter', create=True)
