@@ -1,5 +1,5 @@
-from util import *
-from test_radius import TestRadius, MixinTests
+from tests.test_radius import TestRadius, MixinTests
+from tests.util import *
 
 
 class TestRadiusNoVCS(TestCase):
@@ -19,24 +19,24 @@ class TestRadiusNoVCS(TestCase):
                           lambda x: Radius(vc=x),
                           'made_up_vc')
 
-    def test_using_vc(self):
+    def test_using_vc(self, cwd=TEMP_DIR):
         # TODO dry this and move to TestRadius
         MixinGit.delete_repo()
         MixinHg.delete_repo()
         MixinBzr.delete_repo()
 
-        self.assertFalse(using_hg())
-        if MixinHg.init_vc():
-            self.assertTrue(using_hg())
-        self.assertTrue(isinstance(Radius(vc='hg', cwd=TEMP_DIR).vc, Hg))
+        self.assertFalse(using_hg(cwd=cwd))
+        if MixinHg.init_vc(cwd=cwd):
+            self.assertTrue(using_hg(cwd=cwd))
+            self.assertTrue(isinstance(Radius(vc='hg', cwd=cwd).vc, Hg))
 
-        self.assertFalse(using_bzr())
-        if MixinBzr.init_vc():
-            self.assertTrue(using_bzr())
-        self.assertTrue(isinstance(Radius(vc='bzr', cwd=TEMP_DIR).vc, Bzr))
+        self.assertFalse(using_bzr(cwd=cwd))
+        if MixinBzr.init_vc(cwd=cwd):
+            self.assertTrue(using_bzr(cwd=cwd))
+            self.assertTrue(isinstance(Radius(vc='bzr', cwd=cwd).vc, Bzr))
 
         # git is seen before this, as the dir above is git!
-        self.assertTrue(using_git())
+        self.assertTrue(using_git(cwd=cwd))
         self.assertTrue(isinstance(Radius(vc='git').vc, Git))
 
 
@@ -49,9 +49,9 @@ class MixinVcs(object):
         return cls.successfully_commit_files([f])
 
     @classmethod
-    def init_vc(cls):
-        cls.delete_repo()
-        success = cls.create_repo()
+    def init_vc(cls, cwd=TEMP_DIR):
+        cls.delete_repo(cwd=cwd)
+        success = cls.create_repo(cwd=cwd)
         committed = cls.save_and_commit('a=1;', 'a.py')
         return success and committed
 
@@ -59,26 +59,14 @@ class MixinVcs(object):
 class MixinGit(MixinVcs):
 
     @staticmethod
-    def delete_repo():
-        try:
-            temp_path = os.path.join(TEMP_DIR, '.git')
-            rmtree(temp_path)
-        except OSError as e:  # pragma: no cover
-            # see http://stackoverflow.com/questions/1213706/
-            # and http://stackoverflow.com/questions/7228296/
-            if e.errno == errno.EACCES:
-                import stat
-                for dirpath, dirnames, filenames in os.walk(temp_path):
-                    for filename in filenames:
-                        os.chmod(os.path.join(dirpath, filename),
-                                 stat.S_IWRITE)
-                rmtree(temp_path)
+    def delete_repo(cwd=TEMP_DIR):
+        temp_path = os.path.join(cwd, '.git')
+        remove_dir(temp_path)
 
     @staticmethod
-    def create_repo():
-        os.chdir(TEMP_DIR)
+    def create_repo(cwd=TEMP_DIR):
         try:
-            shell_out(["git", "init"], cwd=TEMP_DIR)
+            shell_out(["git", "init"], cwd=cwd)
             return True
         except (OSError, CalledProcessError):
             return False
@@ -87,7 +75,6 @@ class MixinGit(MixinVcs):
     def successfully_commit_files(file_names,
                                   commit="initial_commit",
                                   cwd=TEMP_DIR):
-        os.chdir(TEMP_DIR)
         try:
             shell_out(["git", "add"] + file_names, cwd=cwd)
             shell_out(["git", "commit", "-m", commit], cwd=cwd)
@@ -98,7 +85,6 @@ class MixinGit(MixinVcs):
 
     @staticmethod
     def checkout(branch, create=False, cwd=TEMP_DIR):
-        os.chdir(TEMP_DIR)
         if create:
             shell_out(["git", "checkout", '-b', branch], cwd=cwd)
         else:
@@ -108,17 +94,13 @@ class MixinGit(MixinVcs):
 class MixinHg(MixinVcs):
 
     @staticmethod
-    def delete_repo():
-        try:
-            rmtree(os.path.join(TEMP_DIR, '.hg'))
-        except OSError:
-            pass
+    def delete_repo(cwd=TEMP_DIR):
+        remove_dir(os.path.join(cwd, '.hg'))
 
     @staticmethod
-    def create_repo():
-        os.chdir(TEMP_DIR)
+    def create_repo(cwd=TEMP_DIR):
         try:
-            shell_out(["hg", "init"])
+            shell_out(["hg", "init"], cwd=cwd)
             return True
         except (OSError, CalledProcessError):
             return False
@@ -137,7 +119,6 @@ class MixinHg(MixinVcs):
 
     @staticmethod
     def checkout(branch, create=False, cwd=TEMP_DIR):
-        os.chdir(TEMP_DIR)
         if create:
             shell_out(["hg", "branch", branch], cwd=cwd)
         else:
@@ -147,11 +128,8 @@ class MixinHg(MixinVcs):
 class MixinBzr(MixinVcs):
 
     @staticmethod
-    def delete_repo():
-        try:
-            rmtree(os.path.join(TEMP_DIR, '.bzr'))
-        except OSError:
-            pass
+    def delete_repo(cwd=TEMP_DIR):
+        remove_dir(os.path.join(cwd, '.bzr'))
 
     @staticmethod
     def create_repo(cwd=TEMP_DIR):

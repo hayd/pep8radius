@@ -1,7 +1,6 @@
 from __future__ import with_statement
 
 from contextlib import contextmanager
-import errno
 import os
 from shutil import rmtree
 import sys
@@ -54,13 +53,14 @@ def from_dir(cwd):
         os.chdir(curdir)
 
 
-def pep8radius_main(args, vc=None):
+def pep8radius_main(args, vc=None, cwd=TEMP_DIR):
     if isinstance(args, list):
         args = parse_args(args)
     with captured_output() as (out, err):
         try:
             from pep8radius.main import main
-            main(args, vc=vc)
+            with from_dir(cwd):
+                main(args, vc=vc)
         except SystemExit:
             pass
     return out.getvalue().strip()
@@ -78,7 +78,29 @@ def mk_temp_dirs():
         pass
 
 
-def save(contents, f):
-    with from_dir(TEMP_DIR):
+def save(contents, f, cwd=TEMP_DIR):
+    with from_dir(cwd):
         with open(f, 'w') as f1:
             f1.write(contents)
+
+def remove_dir(directory):
+    """rmtree, overcoming reported testing issue on Windows*.
+
+    *Due to permissions (being able to create but not remove files).
+    """
+    try:
+        rmtree(directory)
+    except OSError as e:  # pragma: no cover
+        # see http://stackoverflow.com/questions/1213706/
+        # and http://stackoverflow.com/questions/7228296/
+        from errno import EACCES
+        if e.errno == EACCES:
+            from stat import S_IWRITE
+            for dirpath, dirnames, filenames in os.walk(directory):
+                for filename in filenames:
+                    os.chmod(os.path.join(dirpath, filename), S_IWRITE)
+            rmtree(directory)
+
+def get_diff_many(modified, expected, files):
+    return ''.join(get_diff(*mef)
+                   for mef in zip(modified, expected, files))
