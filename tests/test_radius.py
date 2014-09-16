@@ -13,8 +13,6 @@ class TestRadius(TestCase):
     def tearDown(self):
         os.chdir(self.original_dir)
 
-
-
     def setUp(self):
         os.chdir(TEMP_DIR)
         success = self.init_vc()
@@ -56,7 +54,7 @@ class TestRadius(TestCase):
         options.verbose = 0
 
         options.diff = True
-        r = Radius(vc=self.vc, options=options)
+        r = Radius(vc=self.vc, options=options, cwd=TEMP_DIR)
         with captured_output() as (out, err):
             r.fix()
         exp_diff = get_diff(modified, expected, temp_file)
@@ -64,7 +62,7 @@ class TestRadius(TestCase):
         options.diff = False
 
         options.in_place = True
-        r = Radius(vc=self.vc, options=options)
+        r = Radius(vc=self.vc, options=options, cwd=TEMP_DIR)
         # Run pep8radius
         r.fix()
 
@@ -74,7 +72,8 @@ class TestRadius(TestCase):
 
         # Run pep8radius again, it *should* be that this doesn't do anything.
         with captured_output() as (out, err):
-            pep8radius_main(options, vc=self.vc)
+            with from_dir(TEMP_DIR):
+                pep8radius_main(options, vc=self.vc)
         self.assertEqual(out.getvalue(), '')
 
         with open(temp_file, 'r') as f:

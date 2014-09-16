@@ -28,9 +28,8 @@ from pep8radius.shell import CalledProcessError
 from pep8radius.vcs import (VersionControl, Git, Bzr, Hg,
                             using_git, using_hg, using_bzr)
 PEP8RADIUS = os.path.join(ROOT_DIR, 'pep8radius', '__init__.py')
-
-TEMP_DIR = os.path.join(os.path.abspath(os.path.dirname(__file__)),
-                        'temp')
+TEST_DIR = os.path.abspath(os.path.dirname(__file__))
+TEMP_DIR = os.path.join(TEST_DIR, 'temp')
 SUBTEMP_DIR = os.path.join(TEMP_DIR, 'subtemp')
 
 
