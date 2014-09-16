@@ -1,7 +1,8 @@
 include README.md
 include LICENSE.md
-include pep8radius.py
-include tests/test_pep8radius.py
+include pep8radius/*.py
+include tests/*.py
+include tests/*.txt
 
 exclude .coveragerc
 exclude .travis.yml
