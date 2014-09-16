@@ -28,7 +28,7 @@ class Radius(object):
         self.vc = vc(cwd=cwd)
 
         # pep8radius specific options
-        self.rev = self.vc._branch_point(rev)
+        self.rev = self.vc.branch_point(rev)
         from pep8radius.main import parse_args
         self.options = options if options else parse_args([''])
         self.verbose = self.options.verbose
