@@ -4,46 +4,21 @@ from tests.util import *
 class TestRadius(TestCase):
 
     def __init__(self, *args, **kwargs):
-        self.original_dir = os.getcwd()
         mk_temp_dirs()
-        os.chdir(TEMP_DIR)
         self.using_vc = self.init_vc()
         super(TestRadius, self).__init__(*args, **kwargs)
 
-    def tearDown(self):
-        os.chdir(self.original_dir)
-
-    def init_vc(self):
-        self.delete_repo()
-        success = self.create_repo()
-        committed = self._save_and_commit('a=1;', 'a.py')
-        os.chdir(self.original_dir)
-        return success and committed
-
     def setUp(self):
-        os.chdir(TEMP_DIR)
         success = self.init_vc()
         if not success:
             raise SkipTest("%s not configured correctly" % self.vc)
 
-    @staticmethod
-    def _save(contents, f):
-        with from_dir(TEMP_DIR):
-            with open(f, 'w') as f1:
-                f1.write(contents)
-
-    @staticmethod
-    def get_diff_many(modified, expected, files):
-        return ''.join(get_diff(*mef)
-                       for mef in zip(modified, expected, files))
-
     def check(self, original, modified, expected,
               test_name='check', options=None,
-              directory=TEMP_DIR):
+              cwd=TEMP_DIR):
         """Modify original to modified, and check that pep8radius
         turns this into expected."""
-        os.chdir(directory)
-        temp_file = os.path.join(TEMP_DIR, 'temp.py')
+        temp_file = os.path.join(cwd, 'temp.py')
 
         options = parse_args(options)
 
@@ -59,7 +34,7 @@ class TestRadius(TestCase):
             f.write(modified)
 
         options.verbose = 1
-        r = Radius(vc=self.vc, options=options)
+        r = Radius(vc=self.vc, options=options, cwd=cwd)
         with captured_output() as (out, err):
             r.fix()
         self.assertIn('would fix', out.getvalue())
@@ -67,7 +42,7 @@ class TestRadius(TestCase):
         options.verbose = 0
 
         options.diff = True
-        r = Radius(vc=self.vc, options=options)
+        r = Radius(vc=self.vc, options=options, cwd=cwd)
         with captured_output() as (out, err):
             r.fix()
         exp_diff = get_diff(modified, expected, temp_file)
@@ -75,7 +50,7 @@ class TestRadius(TestCase):
         options.diff = False
 
         options.in_place = True
-        r = Radius(vc=self.vc, options=options)
+        r = Radius(vc=self.vc, options=options, cwd=cwd)
         # Run pep8radius
         r.fix()
 
@@ -85,7 +60,8 @@ class TestRadius(TestCase):
 
         # Run pep8radius again, it *should* be that this doesn't do anything.
         with captured_output() as (out, err):
-            pep8radius_main(options, vc=self.vc)
+            with from_dir(cwd):
+                pep8radius_main(options, vc=self.vc)
         self.assertEqual(out.getvalue(), '')
 
         with open(temp_file, 'r') as f:
@@ -114,7 +90,7 @@ class MixinTests:
         modified = 'def poor_indenting():\n  a = 1\n  b = 2\n  return a + b\n\nfoo = 1; bar = 2; print(foo * bar)\na=1; b=42; c=3\nd=7\n\ndef f(x = 1, y = 2):\n    return x + y\n'
         expected = 'def poor_indenting():\n  a = 1\n  b = 2\n  return a + b\n\nfoo = 1; bar = 2; print(foo * bar)\na = 1\nb = 42\nc = 3\nd=7\n\ndef f(x = 1, y = 2):\n    return x + y\n'
         self.check(original, modified, expected, 'test_one_line',
-                   directory=SUBTEMP_DIR)
+                   cwd=SUBTEMP_DIR)
 
     def test_with_docformatter(self):
         original = 'def poor_indenting():\n  """       Great function"""\n  a = 1\n  b = 2\n  return a + b\n\n\n\nfoo = 1; bar = 2; print(foo * bar)\na=1; b=2; c=3\nd=7\n\ndef f(x = 1, y = 2):\n    return x + y\n'
@@ -127,33 +103,32 @@ class MixinTests:
                    'test_with_docformatter', ['--docformatter'])
 
     def test_bad_rev(self):
-        os.chdir(TEMP_DIR)
-        # TODO for some reason this isn't capturing the output!
         with captured_output() as (out, err):
             self.assertRaises(CalledProcessError,
-                              lambda x: Radius(rev=x, vc=self.vc),
+                              lambda x: Radius(rev=x,
+                                               vc=self.vc,
+                                               cwd=TEMP_DIR),
                               'random_junk_sha')
-        os.chdir(self.original_dir)
 
     def test_earlier_revision(self):
         if self.vc == 'bzr':
             raise SkipTest("TODO get me working")
 
-        start = self._save_and_commit('a=1;', 'AAA.py')
+        start = self.save_and_commit('a=1;', 'AAA.py')
         self.checkout('ter', create=True)
-        self._save_and_commit('b=1;', 'BBB.py')
-        tip = self._save_and_commit('c=1;', 'CCC.py')
-        self._save('c=1', 'CCC.py')
+        self.save_and_commit('b=1;', 'BBB.py')
+        tip = self.save_and_commit('c=1;', 'CCC.py')
+        save('c=1', 'CCC.py')
 
         args = parse_args(['--diff', '--no-color'])
-        r = Radius(rev=start, options=args, vc=self.vc)
+        r = Radius(rev=start, options=args, vc=self.vc, cwd=TEMP_DIR)
         with captured_output() as (out, err):
             r.fix()
         diff = out.getvalue()
 
         files = [os.path.join(TEMP_DIR, f) for f in ['BBB.py', 'CCC.py']]
 
-        exp_diff = self.get_diff_many(['b=1;', 'c=1'],
+        exp_diff = get_diff_many(['b=1;', 'c=1'],
                                       ['b = 1\n', 'c = 1\n'],
                                       files)
         self.assert_equal(diff, exp_diff, 'earlier_revision')
@@ -167,18 +142,6 @@ class MixinTests:
         with captured_output() as (out, err):
             diff = r.fix()
         self.assertEqual(diff, None)
-
-
-class TestRadiusGit(TestRadius, MixinGit, MixinTests):
-    vc = 'git'
-
-
-class TestRadiusHg(TestRadius, MixinHg, MixinTests):
-    vc = 'hg'
-
-
-class TestRadiusBzr(TestRadius, MixinBzr, MixinTests):
-    vc = 'bzr'
 
 
 if __name__ == '__main__':

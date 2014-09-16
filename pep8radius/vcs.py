@@ -9,25 +9,27 @@ class AbstractMethodError(NotImplementedError):
     pass
 
 
-def using_git():
+def using_git(cwd):
+    if cwd is None:
+        cwd = os.getcwd()
     try:
-        git_log = shell_out(["git", "log"])
+        git_log = shell_out(["git", "log"], cwd=cwd)
         return True
     except (CalledProcessError, OSError):  # pragma: no cover
         return False
 
 
-def using_hg():
+def using_hg(cwd):
     try:
-        hg_log = shell_out(["hg",   "log"])
+        hg_log = shell_out(["hg",   "log"], cwd=cwd)
         return True
     except (CalledProcessError, OSError):
         return False
 
 
-def using_bzr():
+def using_bzr(cwd):
     try:
-        bzr_log = shell_out(["bzr", "log"])
+        bzr_log = shell_out(["bzr", "log"], cwd=cwd)
         return True
     except (CalledProcessError, OSError):
         return False
@@ -53,13 +55,13 @@ class VersionControl(object):
             raise NotImplementedError("Unknown version control system.")
 
     @staticmethod
-    def which():  # pragma: no cover
+    def which(cwd):  # pragma: no cover
         """Try to see if they are using git or hg.
         return git, hg, bzr or raise NotImplementedError.
 
         """
         for (k, using_vc) in globals().items():
-            if k.startswith('using_') and using_vc():
+            if k.startswith('using_') and using_vc(cwd=cwd):
                 return VersionControl.from_string(k[6:])
 
         # Not supported (yet)
