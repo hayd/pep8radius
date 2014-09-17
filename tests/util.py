@@ -53,14 +53,14 @@ def from_dir(cwd):
         os.chdir(curdir)
 
 
-def pep8radius_main(args, vc=None, cwd=TEMP_DIR):
+def pep8radius_main(args, vc=None, cwd=TEMP_DIR, apply_config=False):
     if isinstance(args, list):
         args = parse_args(args)
     with captured_output() as (out, err):
         try:
             from pep8radius.main import main
             with from_dir(cwd):
-                main(args, vc=vc)
+                main(args, vc=vc, apply_config=apply_config)
         except SystemExit:
             pass
     return out.getvalue().strip()
@@ -82,6 +82,15 @@ def save(contents, f, cwd=TEMP_DIR):
     with from_dir(cwd):
         with open(f, 'w') as f1:
             f1.write(contents)
+
+
+def remove(filename):
+    """remove and don't raise if missing"""
+    try:
+        os.remove(filename)
+    except OSError:
+        pass
+
 
 def remove_dir(directory):
     """rmtree, overcoming reported testing issue on Windows*.

@@ -55,11 +55,13 @@ class VersionControl(object):
             raise NotImplementedError("Unknown version control system.")
 
     @staticmethod
-    def which(cwd):  # pragma: no cover
+    def which(cwd=None):  # pragma: no cover
         """Try to see if they are using git or hg.
         return git, hg, bzr or raise NotImplementedError.
 
         """
+        if cwd is None:
+            cwd = os.getcwd()
         for (k, using_vc) in globals().items():
             if k.startswith('using_') and using_vc(cwd=cwd):
                 return VersionControl.from_string(k[6:])
