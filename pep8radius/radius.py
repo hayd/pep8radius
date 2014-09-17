@@ -27,6 +27,8 @@ class Radius(object):
             assert(issubclass(vc, VersionControl))
         self.vc = vc(cwd=cwd)
 
+        self.jobs = 1
+
         # pep8radius specific options
         self.rev = self.vc.branch_point(rev)
         from pep8radius.main import parse_args
@@ -55,19 +57,43 @@ class Radius(object):
 
         self.p('Applying autopep8 to touched lines in %s file(s).' % n)
 
-        total_lines_changed = 0
-        pep8_diffs = []
-        for i, file_name in enumerate(self.filenames_diff, start=1):
+        pep8_diffs = {}
+        if self.jobs > 1:
+            verbose = (self.verbose, self.options.verbose)
+            self.verbose, self.options.verbose = 0, 0
+
+            from multiprocessing import Manager
+            mgr = Manager()
+            pep8_diffs = mgr.dict()
+
+        def _fix(i, file_name, self=self):
             self.p('%s/%s: %s: ' % (i, n, file_name), end='')
             self.p('', min_=2)
 
             p_diff = self.fix_file(file_name)
-            lines_changed = udiff_lines_fixed(p_diff) if p_diff else 0
-            total_lines_changed += lines_changed
-            self.p('fixed %s lines.' % lines_changed, max_=1)
+            # self.p('fixed %s lines.' % lines_changed, max_=1)
 
             if p_diff and self.diff:
-                pep8_diffs.append(p_diff)
+                pep8_diffs[file_name] = p_diff
+
+        ifiles = enumerate(self.filenames_diff, start=1)
+        if self.jobs > 1:
+            from multiprocessing import Process
+            procs = [Process(target=_fix, args=(i, filename))
+                     for (i, filename) in ifiles]
+            for p in procs:
+                p.start()
+            for p in procs:
+                p.join()
+        else:
+            for i, file_name in ifiles:
+                _fix(i, file_name)
+
+        total_lines_changed = sum(udiff_lines_fixed(d)
+                                  for d in pep8_diffs.values())
+
+        if self.jobs > 1:
+            self.verbose, self.options.verbose = verbose
 
         if self.in_place:
             self.p('pep8radius fixed %s lines in %s files.'
@@ -77,7 +103,7 @@ class Radius(object):
                    % (total_lines_changed, n))
 
         if self.diff:
-            for diff in pep8_diffs:
+            for diff in map(pep8_diffs.get, self.filenames_diff):
                 print_diff(diff, color=self.color)
 
     def fix_file(self, file_name):
