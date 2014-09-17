@@ -110,6 +110,7 @@ def remove_dir(directory):
                     os.chmod(os.path.join(dirpath, filename), S_IWRITE)
             rmtree(directory)
 
+
 def get_diff_many(modified, expected, files):
     return ''.join(get_diff(*mef)
                    for mef in zip(modified, expected, files))

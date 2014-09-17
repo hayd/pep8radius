@@ -7,7 +7,7 @@ from setuptools import setup
 from sys import version_info
 
 
-NAME = 'pep8radius' #  'Better-Than-You-Found-It'
+NAME = 'pep8radius'  # 'Better-Than-You-Found-It'
 
 
 def version():
@@ -18,6 +18,7 @@ def version():
         for line in input_file:
             if line.startswith('__version__'):
                 return parse(line).body[0].value.s
+
 
 def readme():
     try:
@@ -67,6 +68,6 @@ setup(
     packages=['pep8radius'],
     test_suite='tests',
     zip_safe=False,
-    entry_points={'console_scripts': ['btyfi = pep8radius.main:main_',
-                                      'pep8radius = pep8radius.main:main_']},
+    entry_points={'console_scripts': ['btyfi = pep8radius.main:_main',
+                                      'pep8radius = pep8radius.main:_main']},
 )

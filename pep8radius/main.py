@@ -7,22 +7,18 @@ from pep8radius.radius import Radius
 from pep8radius.shell import CalledProcessError  # with 2.6 compat
 from pep8radius.vcs import VersionControl
 
-__version__ = version = '0.9.0a'
+__version__ = version = '0.9.0b'
 
 
 DEFAULT_IGNORE = 'E24'
 DEFAULT_INDENT_SIZE = 4
 
-if sys.platform == 'win32':
+if sys.platform == 'win32':  # pragma: no cover
     DEFAULT_CONFIG = os.path.expanduser(r'~\.pep8')
 else:
     DEFAULT_CONFIG = os.path.join(os.getenv('XDG_CONFIG_HOME') or
                                   os.path.expanduser('~/.config'), 'pep8')
 PROJECT_CONFIG = ('setup.cfg', 'tox.ini', '.pep8')
-
-
-def main_(args=None, vc=None, cwd=None):  # pragma: no cover
-    return main(args=args, vc=vc, cwd=cwd, apply_config=True)
 
 
 def main(args=None, vc=None, cwd=None, apply_config=False):
@@ -38,7 +34,6 @@ def main(args=None, vc=None, cwd=None, apply_config=False):
 
     if args is None:
         args = parse_args(sys.argv[1:], apply_config=apply_config)
-        print(args)
 
     try:
         # main
@@ -230,5 +225,9 @@ def _split_comma_separated(string):
     return set(filter(None, string.split(',')))
 
 
+def _main(args=None, vc=None, cwd=None):  # pragma: no cover
+    return main(args=args, vc=vc, cwd=cwd, apply_config=True)
+
+
 if __name__ == "__main__":  # pragma: no cover
-    main(apply_config=True)
+    _main()
