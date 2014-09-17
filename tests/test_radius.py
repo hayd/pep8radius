@@ -129,8 +129,8 @@ class MixinTests:
         files = [os.path.join(TEMP_DIR, f) for f in ['BBB.py', 'CCC.py']]
 
         exp_diff = get_diff_many(['b=1;', 'c=1'],
-                                      ['b = 1\n', 'c = 1\n'],
-                                      files)
+                                 ['b = 1\n', 'c = 1\n'],
+                                 files)
         self.assert_equal(diff, exp_diff, 'earlier_revision')
 
         # TODO test the diff is correct
@@ -140,8 +140,17 @@ class MixinTests:
         args = parse_args(['--diff', '--no-color'])
         r = Radius(options=args, vc=self.vc, cwd=TEMP_DIR)
         with captured_output() as (out, err):
-            diff = r.fix()
-        self.assertEqual(diff, None)
+            r.fix()
+        self.assertEqual(out.getvalue(), '')
+
+    def test_exclude(self):
+        self.save_and_commit('b=1;', 'BBB.py')
+        save('b=1', 'BBB.py')
+        args = parse_args(['--diff', '--no-color', '--exclude=BBB.py'])
+        r = Radius(options=args, vc=self.vc, cwd=TEMP_DIR)
+        with captured_output() as (out, err):
+            r.fix()
+        self.assertEqual(out.getvalue(), '')
 
 
 if __name__ == '__main__':
