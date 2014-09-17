@@ -3,9 +3,14 @@ from __future__ import print_function
 import os
 import sys
 
+from argparse import ArgumentParser
+try:
+    from ConfigParser import SafeConfigParser, NoSectionError
+except ImportError:  # py3, pragma: no cover
+    from configparser import SafeConfigParser, NoSectionError
+
 from pep8radius.radius import Radius
 from pep8radius.shell import CalledProcessError  # with 2.6 compat
-from pep8radius.vcs import VersionControl
 
 __version__ = version = '0.9.0b'
 
@@ -65,10 +70,7 @@ def main(args=None, vc=None, cwd=None, apply_config=False):
         return 1
 
 
-def create_parser(root):
-    from argparse import ArgumentParser
-
-    # TODO allow passing a config?
+def create_parser():
     description = ("PEP8 clean only the parts of the files which you have "
                    "touched since the last commit, previous commit or "
                    "branch.")
@@ -147,40 +149,11 @@ def create_parser(root):
     return parser
 
 
-def apply_config_defaults(parser, arguments, root):
-    config_file = _get_config_file(arguments)
-    try:
-        from ConfigParser import SafeConfigParser, NoSectionError
-    except ImportError:  # py3, pragma: no cover
-        from configparser import SafeConfigParser, NoSectionError
-    config = SafeConfigParser()
-    if config_file:
-        config.read(config_file)
-    else:
-        config.read(config_files(root))
-    try:
-        defaults = dict(config.items("pep8"))
-        parser.set_defaults(**defaults)
-    except NoSectionError:
-        pass  # just do nothing, potentially this could raise ?
-    return parser
-
-
-def _get_config_file(arguments):
-    from argparse import ArgumentParser
-    p = ArgumentParser()
-    p.add_argument('--config-file', default='')
-    config_file = p.parse_known_args(arguments)[0].config_file
-    return os.path.expanduser(config_file)
-
-
 def parse_args(arguments=None, root=None, apply_config=False):
     if arguments is None:
         arguments = []
-    if root is None:
-        root = VersionControl.which().root_dir()
 
-    parser = create_parser(root)
+    parser = create_parser()
     if apply_config:
         apply_config_defaults(parser, arguments, root=root)
     args = parser.parse_args(arguments)
@@ -206,6 +179,31 @@ def parse_args(arguments=None, root=None, apply_config=False):
         args.exclude = []
 
     return args
+
+
+def apply_config_defaults(parser, arguments, root):
+    if root is None:
+        from pep8radius.vcs import VersionControl
+        root = VersionControl.which().root_dir()
+
+    config_file = config_file_arg(arguments)
+
+    config = SafeConfigParser()
+    config.read(config_file or config_files(root))
+    try:
+        defaults = dict(config.items("pep8"))
+        parser.set_defaults(**defaults)
+    except NoSectionError:
+        pass  # just do nothing, potentially this could raise ?
+    return parser
+
+
+def config_file_arg(arguments):
+    """Get --config-arg from arguments"""
+    p = ArgumentParser()
+    p.add_argument('--config-file', default='')
+    config_file = p.parse_known_args(arguments)[0].config_file
+    return os.path.expanduser(config_file)
 
 
 def config_files(root):
