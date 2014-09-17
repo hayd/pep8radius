@@ -7,13 +7,10 @@ class TestMain(TestCase):
     def test_autopep8_args(self):
         import autopep8
 
-        # TODO see that these are passes on (use a static method in Radius?)
-
         args = ['hello.py']
         us = parse_args(args)
         them = autopep8.parse_args(args)
 
-        # API change in autopep8, these are now sets rather than lists
         self.assertEqual(us.select, them.select)
         self.assertEqual(us.ignore, them.ignore)
 
@@ -50,6 +47,8 @@ class TestMain(TestCase):
             f.write("[pep8]\nignore=E999")
         args_after = parse_args(['--config-file=%s' % cfg], apply_config=True)
         self.assertIn('E999', args_after.ignore)
+        args_after = parse_args(['--config-file=False'], apply_config=True)
+        self.assertNotIn('E999', args_after.ignore)
         remove(cfg)
 
 

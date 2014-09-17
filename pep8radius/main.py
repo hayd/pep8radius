@@ -21,6 +21,10 @@ else:
 PROJECT_CONFIG = ('setup.cfg', 'tox.ini', '.pep8')
 
 
+def main_(args=None, vc=None, cwd=None):  # pragma: no cover
+    return main(args=args, vc=vc, cwd=cwd, apply_config=True)
+
+
 def main(args=None, vc=None, cwd=None, apply_config=False):
     import signal
     import sys
@@ -34,6 +38,7 @@ def main(args=None, vc=None, cwd=None, apply_config=False):
 
     if args is None:
         args = parse_args(sys.argv[1:], apply_config=apply_config)
+        print(args)
 
     try:
         # main
@@ -148,15 +153,10 @@ def create_parser(root):
 
 
 def apply_config_defaults(parser, arguments, root):
-    from argparse import ArgumentParser
-    p = ArgumentParser()
-    p.add_argument('--config-file', default='')
-    config_file = p.parse_known_args(arguments)[0].config_file
-    config_file = os.path.expanduser(config_file)
-
+    config_file = _get_config_file(arguments)
     try:
         from ConfigParser import SafeConfigParser, NoSectionError
-    except:
+    except ImportError:  # py3, pragma: no cover
         from configparser import SafeConfigParser, NoSectionError
     config = SafeConfigParser()
     if config_file:
@@ -166,10 +166,17 @@ def apply_config_defaults(parser, arguments, root):
     try:
         defaults = dict(config.items("pep8"))
         parser.set_defaults(**defaults)
-        # TODO could also get docformatter ?
     except NoSectionError:
         pass  # just do nothing, potentially this could raise ?
     return parser
+
+
+def _get_config_file(arguments):
+    from argparse import ArgumentParser
+    p = ArgumentParser()
+    p.add_argument('--config-file', default='')
+    config_file = p.parse_known_args(arguments)[0].config_file
+    return os.path.expanduser(config_file)
 
 
 def parse_args(arguments=None, root=None, apply_config=False):
