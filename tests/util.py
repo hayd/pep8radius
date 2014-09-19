@@ -62,7 +62,7 @@ def pep8radius_main(args, vc=None, cwd=TEMP_DIR, apply_config=False):
         with captured_output() as (out, err):
             try:
                 from pep8radius.main import main
-                main(args, vc=vc, apply_config=apply_config)
+                main(args, vc=vc, apply_config=apply_config, cwd=cwd)
             except SystemExit:
                 pass
         return out.getvalue().strip()

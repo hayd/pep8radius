@@ -43,7 +43,7 @@ def main(args=None, vc=None, cwd=None, apply_config=False):
 
     try:
         if args is None:
-            args = sys.argv[1:]
+            args = []
 
         try:
             # Note: argparse on py 2.6 you can't pass a set
@@ -51,10 +51,10 @@ def main(args=None, vc=None, cwd=None, apply_config=False):
             args_set = set(args)
         except TypeError:
             args_set = args  # args is a Namespace
-        if '--version' in args_set or hasattr(args_set, 'version'):
+        if '--version' in args_set or getattr(args_set, 'version', 0):
             print(version)
             sys.exit(0)
-        if '--list-fixes' in args_set or hasattr(args_set, 'list_fixes'):
+        if '--list-fixes' in args_set or getattr(args_set, 'list_fixes', 0):
             from autopep8 import supported_fixes
             for code, description in sorted(supported_fixes()):
                 print('{code} - {description}'.format(
@@ -62,7 +62,10 @@ def main(args=None, vc=None, cwd=None, apply_config=False):
             sys.exit(0)
 
         try:
-            args = parse_args(args, apply_config=apply_config)
+            try:
+                args = parse_args(args, apply_config=apply_config)
+            except TypeError:
+                pass  # args is already a Namespace (testing)
             r = Radius(rev=args.rev, options=args, vc=vc, cwd=cwd)
         except NotImplementedError as e:  # pragma: no cover
             print(e)
@@ -252,6 +255,8 @@ def _split_comma_separated(string):
 
 
 def _main(args=None, vc=None, cwd=None):  # pragma: no cover
+    if args is None:
+        args = sys.argv[1:]
     return main(args=args, vc=vc, cwd=cwd, apply_config=True)
 
 

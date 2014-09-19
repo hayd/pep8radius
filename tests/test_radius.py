@@ -59,10 +59,8 @@ class TestRadius(TestCase):
         self.assert_equal(result, expected, test_name)
 
         # Run pep8radius again, it *should* be that this doesn't do anything.
-        with captured_output() as (out, err):
-            with from_dir(cwd):
-                pep8radius_main(options, vc=self.vc)
-        self.assertEqual(out.getvalue(), '')
+        out = pep8radius_main(options, vc=self.vc, cwd=cwd)
+        self.assertEqual(out, '')
 
         with open(temp_file, 'r') as f:
             result = f.read()
