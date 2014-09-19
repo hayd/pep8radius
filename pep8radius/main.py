@@ -41,16 +41,20 @@ def main(args=None, vc=None, cwd=None, apply_config=False):
         # SIGPIPE is not available on Windows.
         pass
 
-    if args is None:
-        args = parse_args(sys.argv[1:], apply_config=apply_config)
-
     try:
-        # main
-        if args.version:
+        if args is None:
+            args = sys.argv[1:]
+
+        try:
+            # Note: argparse on py 2.6 you can't pass a set
+            # TODO neater solution for this!
+            args_set = set(args)
+        except TypeError:
+            args_set = args  # args is a Namespace
+        if '--version' in args_set or hasattr(args_set, 'version'):
             print(version)
             sys.exit(0)
-
-        if args.list_fixes:
+        if '--list-fixes' in args_set or hasattr(args_set, 'list_fixes'):
             from autopep8 import supported_fixes
             for code, description in sorted(supported_fixes()):
                 print('{code} - {description}'.format(
@@ -58,6 +62,7 @@ def main(args=None, vc=None, cwd=None, apply_config=False):
             sys.exit(0)
 
         try:
+            args = parse_args(args, apply_config=apply_config)
             r = Radius(rev=args.rev, options=args, vc=vc, cwd=cwd)
         except NotImplementedError as e:  # pragma: no cover
             print(e)
@@ -67,7 +72,6 @@ def main(args=None, vc=None, cwd=None, apply_config=False):
             output = c.output.splitlines()[0]
             print(output)
             sys.exit(c.returncode)
-
         r.fix()
 
     except KeyboardInterrupt:  # pragma: no cover
@@ -82,7 +86,8 @@ def create_parser():
     epilog = ("Run before you commit, against a previous commit or "
               "branch before merging.")
     parser = ArgumentParser(description=description,
-                            epilog=epilog)
+                            epilog=epilog,
+                            prog='pep8radius')
 
     parser.add_argument('rev',
                         help='commit or name of branch to compare against',
@@ -225,16 +230,20 @@ def config_arg(arguments):
             return os.path.expanduser(config_file)
 
 
-def config_files(root):
-    """Returns a list of the global config files and any local config files
+def config_files(root, home='~'):
+    """Returns a list of the global config files and local config files
     found in the root directory.
 
     Note as we pass this into config.read, where later config files are
-    considered more important than preceding. That is files override the
-    settings of previous files.
+    considered more important than preceding. That is later files override
+    the settings of previous files.
 
     """
-    return [DEFAULT_CONFIG] + [os.path.join(root, c) for c in PROJECT_CONFIG]
+    home = os.path.expanduser('~')
+    local_configs = [os.path.join(root, c) for c in PROJECT_CONFIG]
+    global_configs = [DEFAULT_CONFIG] + [os.path.join(home, c)
+                                         for c in PROJECT_CONFIG]
+    return global_configs + local_configs
 
 
 def _split_comma_separated(string):

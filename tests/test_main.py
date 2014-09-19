@@ -53,10 +53,21 @@ class TestMain(TestCase):
         remove(cfg)
 
     def test_help(self):
-        help_message = pep8radius_main(['--help'])
+        self.check_help()
+
+    def test_help_outside_project(self):
+        home = os.path.expanduser('~')
+        try:
+            VersionControl.which(cwd=home)
+            raise SkipTest("Home directory is under version control ??")
+        except NotImplementedError:
+            pass
+        self.check_help(cwd=home)
+
+    def check_help(self, cwd=TEMP_DIR):
+        help_message = pep8radius_main(['--help'], cwd=cwd)
         self.assertIn("--no-color", help_message)
         self.assertIn("PEP8 clean only the parts of the files", help_message)
-
 
 if __name__ == '__main__':
     test_main()
