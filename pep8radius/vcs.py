@@ -20,8 +20,6 @@ class AbstractMethodError(NotImplementedError):
 
 def using_git(cwd):
     """Test whether the directory cwd is contained in a git repository."""
-    if cwd is None:
-        cwd = os.getcwd()
     try:
         git_log = shell_out(["git", "log"], cwd=cwd)
         return True

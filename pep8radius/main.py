@@ -223,7 +223,6 @@ def config_arg(arguments):
         if arg.startswith('--config'):
             config_file = arg[9:]
             return os.path.expanduser(config_file)
-    return ''
 
 
 def config_files(root):
