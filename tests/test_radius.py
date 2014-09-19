@@ -160,7 +160,7 @@ class MixinTests:
         modified = "def f(x):\n    return 3*x\n"
         expected = "def f(x):\n  return 3 * x\n"
         self.check(original, modified, expected,
-                   'test_config', ['--config-file=%s' % cfg],
+                   'test_config', ['--config=%s' % cfg],
                    apply_config=True)
         remove(cfg)
 

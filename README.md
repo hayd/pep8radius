@@ -83,13 +83,18 @@ control systems on [github](https://github.com/hayd/pep8radius/issues/5).
 Options
 -------
 
-```
-usage: pep8radius.py [-h] [--version] [-v] [-d] [-i] [-p n] [-a]
-                     [--experimental] [--exclude globs] [--list-fixes]
-                     [--ignore errors] [--select errors] [--max-line-length n]
-                     [--indent-size n] [--docformatter] [--no-blank]
-                     [--pre-summary-newline] [--force-wrap]
-                     [rev]
+```sh
+$ pep8radius --help
+
+usage: pep8radius [-h] [--version] [--config CONFIG] [-d] [-i] [--no-color]
+                  [-v] [-p n] [-a] [--experimental] [--exclude globs]
+                  [--list-fixes] [--ignore errors] [--select errors]
+                  [--max-line-length n] [--indent-size n] [-f] [--no-blank]
+                  [--pre-summary-newline] [--force-wrap]
+                  [rev]
+
+PEP8 clean only the parts of the files which you have touched since the last
+commit, previous commit or branch.
 
 positional arguments:
   rev                   commit or name of branch to compare against
@@ -97,11 +102,18 @@ positional arguments:
 optional arguments:
   -h, --help            show this help message and exit
   --version             print version number and exit
+  --config CONFIG       path to pep8 config file; don't pass anything and
+                        global and local config files will be used; pass False
+                        or a non-existent file to use defaults
+  -d, --diff            print the diff of fixed source vs original
+  -i, --in-place        make the fixes in place; modify the files
+  --no-color            do not print diffs in color (default is to use color)
   -v, --verbose         print verbose messages; multiple -v result in more
-                        verbose messages (passed to autopep8)
-  -d, --diff            print the diff for the fixed source
-  -i, --in-place        make the changes in place
-  -f, --docformatter    fix docstrings for PEP257 using docformatter
+                        verbose messages (one less -v is passed to autopep8)
+
+pep8:
+  Pep8 options to pass to autopep8.
+
   -p n, --pep8-passes n
                         maximum number of additional pep8 passes (default:
                         infinite)
@@ -110,17 +122,25 @@ optional arguments:
   --experimental        enable experimental fixes
   --exclude globs       exclude file/directory names that match these comma-
                         separated globs
-  --list-fixes          list codes for fixes; used by --ignore and --select
+  --list-fixes          list codes for fixes and exit; used by --ignore and
+                        --select
   --ignore errors       do not fix these errors/warnings (default: E24)
   --select errors       fix only these errors/warnings (e.g. E4,W)
   --max-line-length n   set maximum allowed line length (default: 79)
   --indent-size n       number of spaces per indent level (default 4)
-  --no-blank            do not add blank line after description; used by
-                        docformatter
+
+docformatter:
+  Fix docstrings for PEP257.
+
+  -f, --docformatter    Use docformatter
+  --no-blank            Do not add blank line after description
   --pre-summary-newline
                         add a newline before the summary of a multi-line
-                        docstring; used by docformatter
+                        docstring
   --force-wrap          force descriptions to be wrapped even if it may result
-                        in a mess; used by docformatter
+                        in a mess
+
+Run before you commit, against a previous commit or branch before merging.
 ```
+
 *For more information about these options see [autopep8](https://pypi.python.org/pypi/autopep8).*

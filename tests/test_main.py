@@ -45,12 +45,17 @@ class TestMain(TestCase):
 
         with open(cfg, mode='w') as f:
             f.write("[pep8]\nignore=E999")
-        args_after = parse_args(['--config-file=%s' % cfg], apply_config=True)
+        args_after = parse_args(['--config=%s' % cfg], apply_config=True)
         self.assertIn('E999', args_after.ignore)
-        args_after = parse_args(['--config-file=False'], apply_config=True)
+        args_after = parse_args(['--config=False'], apply_config=True)
         self.assertNotIn('E999', args_after.ignore)
 
         remove(cfg)
+
+    def test_help(self):
+        help_message = pep8radius_main(['--help'])
+        self.assertIn("--no-color", help_message)
+        self.assertIn("PEP8 clean only the parts of the files", help_message)
 
 
 if __name__ == '__main__':

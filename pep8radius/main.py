@@ -79,7 +79,7 @@ def create_parser():
     description = ("PEP8 clean only the parts of the files which you have "
                    "touched since the last commit, previous commit or "
                    "branch.")
-    epilog = ("Run before you commit, or against a previous commit or "
+    epilog = ("Run before you commit, against a previous commit or "
               "branch before merging.")
     parser = ArgumentParser(description=description,
                             epilog=epilog)
@@ -87,69 +87,73 @@ def create_parser():
     parser.add_argument('rev',
                         help='commit or name of branch to compare against',
                         nargs='?')
+    parser.add_argument('--version',
+                        help='print version number and exit',
+                        action='store_true')
 
-    group = parser.add_mutually_exclusive_group(required=False)
-
-    group.add_argument('--version',
-                       help='print version number and exit',
-                       action='store_true')
-    group.add_argument('--config-file',
-                       default='',
-                       help='path to pep8 config file')
-
-    parser.add_argument('-v', '--verbose', action='count', dest='verbose',
-                        default=0,
-                        help='print verbose messages; '
-                        'multiple -v result in more verbose messages')
+    parser.add_argument('--config',
+                        default='',
+                        help='path to pep8 config file; '
+                        "don't pass anything and global and local "
+                        'config files will be used; pass False or '
+                        'a non-existent file to use defaults')
     parser.add_argument('-d', '--diff', action='store_true', dest='diff',
                         help='print the diff of fixed source vs original')
     parser.add_argument('-i', '--in-place', action='store_true',
-                        help="make the changes in place")
-    parser.add_argument('-f', '--docformatter', action='store_true',
-                        help='fix docstrings for PEP257 using docformatter')
-    parser.add_argument('--no-color', action='store_true',
-                        help='do not print diffs in color')
+                        help="make the fixes in place; modify the files")
 
-    # autopep8 options
-    parser.add_argument('-p', '--pep8-passes', metavar='n',
-                        default=-1, type=int,
-                        help='maximum number of additional pep8 passes '
-                        '(default: infinite)')
-    parser.add_argument('-a', '--aggressive', action='count', default=0,
-                        help='enable non-whitespace changes; '
-                        'multiple -a result in more aggressive changes')
-    parser.add_argument('--experimental', action='store_true',
-                        help='enable experimental fixes')
-    parser.add_argument('--exclude', metavar='globs',
-                        help='exclude file/directory names that match these '
-                        'comma-separated globs')
-    parser.add_argument('--list-fixes', action='store_true',
-                        help='list codes for fixes; '
-                        'used by --ignore and --select')
-    parser.add_argument('--ignore', metavar='errors', default='',
-                        help='do not fix these errors/warnings '
-                        '(default: {0})'.format(DEFAULT_IGNORE))
-    parser.add_argument('--select', metavar='errors', default='',
-                        help='fix only these errors/warnings (e.g. E4,W)')
-    parser.add_argument('--max-line-length', metavar='n', default=79, type=int,
-                        help='set maximum allowed line length '
-                        '(default: %(default)s)')
-    parser.add_argument('--indent-size', default=DEFAULT_INDENT_SIZE,
-                        type=int, metavar='n',
-                        help='number of spaces per indent level '
-                             '(default %(default)s)')
-    # docformatter options
-    parser.add_argument('--no-blank', dest='post_description_blank',
-                        action='store_false',
-                        help='do not add blank line after description; '
-                             'used by docformatter')
-    parser.add_argument('--pre-summary-newline',
-                        action='store_true',
-                        help='add a newline before the summary of a '
-                             'multi-line docstring; used by docformatter')
-    parser.add_argument('--force-wrap', action='store_true',
-                        help='force descriptions to be wrapped even if it may '
-                             'result in a mess; used by docformatter')
+    parser.add_argument('--no-color', action='store_true',
+                        help='do not print diffs in color '
+                             '(default is to use color)')
+    parser.add_argument('-v', '--verbose', action='count', dest='verbose',
+                        default=0,
+                        help='print verbose messages; '
+                        'multiple -v result in more verbose messages '
+                        '(one less -v is passed to autopep8)')
+
+    ap = parser.add_argument_group('pep8', 'Pep8 options to pass to autopep8.')
+    ap.add_argument('-p', '--pep8-passes', metavar='n',
+                    default=-1, type=int,
+                    help='maximum number of additional pep8 passes '
+                    '(default: infinite)')
+    ap.add_argument('-a', '--aggressive', action='count', default=0,
+                    help='enable non-whitespace changes; '
+                    'multiple -a result in more aggressive changes')
+    ap.add_argument('--experimental', action='store_true',
+                    help='enable experimental fixes')
+    ap.add_argument('--exclude', metavar='globs',
+                    help='exclude file/directory names that match these '
+                    'comma-separated globs')
+    ap.add_argument('--list-fixes', action='store_true',
+                    help='list codes for fixes and exit; '
+                    'used by --ignore and --select')
+    ap.add_argument('--ignore', metavar='errors', default='',
+                    help='do not fix these errors/warnings '
+                    '(default: {0})'.format(DEFAULT_IGNORE))
+    ap.add_argument('--select', metavar='errors', default='',
+                    help='fix only these errors/warnings (e.g. E4,W)')
+    ap.add_argument('--max-line-length', metavar='n', default=79, type=int,
+                    help='set maximum allowed line length '
+                    '(default: %(default)s)')
+    ap.add_argument('--indent-size', default=DEFAULT_INDENT_SIZE,
+                    type=int, metavar='n',
+                    help='number of spaces per indent level '
+                    '(default %(default)s)')
+
+    df = parser.add_argument_group('docformatter',
+                                   'Fix docstrings for PEP257.')
+    df.add_argument('-f', '--docformatter', action='store_true',
+                    help='Use docformatter')
+    df.add_argument('--no-blank', dest='post_description_blank',
+                    action='store_false',
+                    help='Do not add blank line after description')
+    df.add_argument('--pre-summary-newline',
+                    action='store_true',
+                    help='add a newline before the summary of a '
+                    'multi-line docstring')
+    df.add_argument('--force-wrap', action='store_true',
+                    help='force descriptions to be wrapped even if it may '
+                    'result in a mess')
 
     return parser
 
@@ -193,13 +197,13 @@ def parse_args(arguments=None, root=None, apply_config=False):
 
 
 def apply_config_defaults(parser, arguments, root):
-    """Update the parser's defaults from either the arguments' config_file_arg
-    or the config files given in config_files(root)."""
+    """Update the parser's defaults from either the arguments' config_arg or
+    the config files given in config_files(root)."""
     if root is None:
         from pep8radius.vcs import VersionControl
         root = VersionControl.which().root_dir()
 
-    config_file = config_file_arg(arguments)
+    config_file = config_arg(arguments)
 
     config = SafeConfigParser()
     config.read(config_file or config_files(root))
@@ -212,13 +216,14 @@ def apply_config_defaults(parser, arguments, root):
     return parser
 
 
-def config_file_arg(arguments):
-    """Get --config-file arg from arguments
+def config_arg(arguments):
+    """Get --config arg from arguments.
     """
-    p = ArgumentParser()
-    p.add_argument('--config-file', default='')
-    config_file = p.parse_known_args(arguments)[0].config_file
-    return os.path.expanduser(config_file)
+    for arg in arguments:
+        if arg.startswith('--config'):
+            config_file = arg[9:]
+            return os.path.expanduser(config_file)
+    return ''
 
 
 def config_files(root):

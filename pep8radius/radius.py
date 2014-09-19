@@ -70,7 +70,6 @@ class Radius(object):
             p_diff = self.fix_file(file_name)
             lines_changed = udiff_lines_fixed(p_diff) if p_diff else 0
             total_lines_changed += lines_changed
-            self.p('fixed %s lines.' % lines_changed, max_=1)
 
             if p_diff and self.diff:
                 pep8_diffs.append(p_diff)

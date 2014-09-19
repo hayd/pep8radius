@@ -59,10 +59,11 @@ def from_dir(cwd):
 
 def pep8radius_main(args, vc=None, cwd=TEMP_DIR, apply_config=False):
     with from_dir(cwd):
-        if isinstance(args, list):
-            args = parse_args(args, apply_config=apply_config)
         with captured_output() as (out, err):
             try:
+                if isinstance(args, list):
+                    args = parse_args(args, apply_config=apply_config)
+
                 from pep8radius.main import main
                 main(args, vc=vc, apply_config=apply_config)
             except SystemExit:
