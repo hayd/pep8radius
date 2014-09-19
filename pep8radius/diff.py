@@ -1,3 +1,6 @@
+"""This module contains the helpers for diff creation, printing and extracting
+line numbers."""
+
 from __future__ import print_function
 
 import os
@@ -5,12 +8,12 @@ import re
 
 
 def modified_lines_from_udiff(udiff):
-    """Parse a udiff, return iterator of tuples of (start, end) line numbers.
+    """Extract from a udiff an iterator of tuples of (start, end) line numbers.
 
-    Note: returned in descending order (as autopep8 can +- lines)
+    Note: these are returned in descending order.
 
     """
-    chunks = re.split('\n@@ [^\n]+\n', udiff)[:0:-1]
+    chunks = re.split('\n@@ [^\n]+\n', udiff)[:0:-1]  # reversed order
 
     line_numbers = re.findall('@@\s[+-]\d+,\d+ \+(\d+)', udiff)
     line_numbers = list(map(int, line_numbers))[::-1]
@@ -26,9 +29,8 @@ def modified_lines_from_udiff(udiff):
 
 
 def udiff_lines_fixed(u):
-    """Count lines fixed (removed) in udiff.
-
-    """
+    """Count lines fixed (removed) in udiff."""
+    # TODO maybe this should return + and - (and tweak printing in Radius)
     removed_changes = re.findall('\n\-', u)
     return len(removed_changes)
 
@@ -54,6 +56,8 @@ def get_diff(original, fixed, file_name,
 
 
 def print_diff(diff, color=True):
+    """Pretty printing for a diff, if color then we use a simple color scheme
+    (red for removed lines, green for added lines)."""
     import colorama
 
     if not diff:

@@ -15,12 +15,12 @@ class TestRadius(TestCase):
 
     def check(self, original, modified, expected,
               test_name='check', options=None,
-              cwd=TEMP_DIR):
-        """Modify original to modified, and check that pep8radius
-        turns this into expected."""
+              cwd=TEMP_DIR, apply_config=False):
+        """Modify original to modified, and check that pep8radius turns this
+        into expected."""
         temp_file = os.path.join(cwd, 'temp.py')
 
-        options = parse_args(options)
+        options = parse_args(options, apply_config=apply_config)
 
         # TODO remove this color hack, and actually test printing color diff
         options.no_color = True
@@ -69,7 +69,7 @@ class TestRadius(TestCase):
         self.assert_equal(result, expected, test_name)
 
     def assert_equal(self, result, expected, test_name):
-        """like assertEqual but with a nice diff output if not equal"""
+        """like assertEqual but with a nice diff output if not equal."""
         self.assertEqual(result, expected,
                          get_diff(expected, result, test_name,
                                   'expected', 'result'))
@@ -77,7 +77,7 @@ class TestRadius(TestCase):
 
 class MixinTests:
 
-    """All Radius tests are placed in this class"""
+    """All Radius tests are placed in this class."""
 
     def test_one_line(self):
         original = 'def poor_indenting():\n  a = 1\n  b = 2\n  return a + b\n\nfoo = 1; bar = 2; print(foo * bar)\na=1; b=2; c=3\nd=7\n\ndef f(x = 1, y = 2):\n    return x + y\n'
@@ -152,6 +152,17 @@ class MixinTests:
             r.fix()
         self.assertEqual(out.getvalue(), '')
 
+    def test_config(self):
+        cfg = os.path.join(TEMP_DIR, '.pep8')
+        with open(cfg, mode='w') as f:
+            f.write("[pep8]\nindent-size=2")
+        original = "def f(x):\n    return 2*x\n"
+        modified = "def f(x):\n    return 3*x\n"
+        expected = "def f(x):\n  return 3 * x\n"
+        self.check(original, modified, expected,
+                   'test_config', ['--config-file=%s' % cfg],
+                   apply_config=True)
+        remove(cfg)
 
 if __name__ == '__main__':
     test_main()

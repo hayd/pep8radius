@@ -1,3 +1,13 @@
+"""This module defines some helper methods shell_out and
+shell_out_ignore_exitcode, which are lightweight wrappers around subprocess'
+check_output function.
+
+Note: We also monkey-patch subprocess for python 2.6 to
+give feature parity with later versions.
+
+"""
+
+
 try:
     from subprocess import STDOUT, check_output, CalledProcessError
 except ImportError:  # pragma: no cover

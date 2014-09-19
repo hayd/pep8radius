@@ -49,6 +49,7 @@ class TestMain(TestCase):
         self.assertIn('E999', args_after.ignore)
         args_after = parse_args(['--config-file=False'], apply_config=True)
         self.assertNotIn('E999', args_after.ignore)
+
         remove(cfg)
 
 

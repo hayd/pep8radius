@@ -1,6 +1,14 @@
+"""This module defines the Radius class, which is where the "meat" of the
+pep8radius machinery is done. The important methods are fix, fix_file and
+fix_line_range.
+
+The vc attribute is a subclass of VersionControl defined in the vcs
+module (provides helper methods for the different vcs e.g. git).
+
+"""
+
 from __future__ import print_function
 
-import codecs
 from sys import version_info
 
 from pep8radius.diff import get_diff, udiff_lines_fixed, print_diff
@@ -13,10 +21,8 @@ if version_info[0] > 2:  # py3, pragma: no cover
 
 class Radius(object):
 
-    """PEP8 clean only the parts of the files touched since the last commit,
-    a previous commit or branch.
-
-    """
+    """PEP8 clean only the parts of the files touched since the last commit, a
+    previous commit or branch."""
 
     def __init__(self, rev=None, options=None, vc=None, cwd=None):
         if vc is None:
@@ -115,7 +121,7 @@ class Radius(object):
         return get_diff(original, fixed, file_name)
 
     def fix_line_range(self, f, start, end):
-        """Apply autopep8 between start and end of file f xcasxz."""
+        """Apply autopep8 between start and end of file f."""
         # not sure on behaviour if outside range (indexing starts at 1)
         start = max(start, 1)
 
@@ -138,6 +144,7 @@ class Radius(object):
         return fixed
 
     def p(self, something_to_print, end=None, min_=1, max_=99):
+        """Print if self.verbose is within min_ and max_."""
         if min_ <= self.verbose <= max_:
             import sys
             print(something_to_print, end=end)

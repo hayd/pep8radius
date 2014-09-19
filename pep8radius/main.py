@@ -1,3 +1,6 @@
+"""This module does the argument and config parsing, and contains the main
+function (that is called when calling pep8radius from shell)."""
+
 from __future__ import print_function
 
 import os
@@ -27,8 +30,9 @@ PROJECT_CONFIG = ('setup.cfg', 'tox.ini', '.pep8')
 
 
 def main(args=None, vc=None, cwd=None, apply_config=False):
+    """PEP8 clean only the parts of the files touched since the last commit, a
+    previous commit or branch."""
     import signal
-    import sys
 
     try:  # pragma: no cover
         # Exit on broken pipe.
@@ -71,6 +75,7 @@ def main(args=None, vc=None, cwd=None, apply_config=False):
 
 
 def create_parser():
+    """Create the parser for the pep8radius CLI."""
     description = ("PEP8 clean only the parts of the files which you have "
                    "touched since the last commit, previous commit or "
                    "branch.")
@@ -150,6 +155,12 @@ def create_parser():
 
 
 def parse_args(arguments=None, root=None, apply_config=False):
+    """Parse the arguments from the CLI.
+
+    If apply_config then we first look up and apply configs using
+    apply_config_defaults.
+
+    """
     if arguments is None:
         arguments = []
 
@@ -182,6 +193,8 @@ def parse_args(arguments=None, root=None, apply_config=False):
 
 
 def apply_config_defaults(parser, arguments, root):
+    """Update the parser's defaults from either the arguments' config_file_arg
+    or the config files given in config_files(root)."""
     if root is None:
         from pep8radius.vcs import VersionControl
         root = VersionControl.which().root_dir()
@@ -191,7 +204,8 @@ def apply_config_defaults(parser, arguments, root):
     config = SafeConfigParser()
     config.read(config_file or config_files(root))
     try:
-        defaults = dict(config.items("pep8"))
+        defaults = dict((k.replace('-', '_'), v)
+                        for k, v in config.items("pep8"))
         parser.set_defaults(**defaults)
     except NoSectionError:
         pass  # just do nothing, potentially this could raise ?
@@ -199,7 +213,8 @@ def apply_config_defaults(parser, arguments, root):
 
 
 def config_file_arg(arguments):
-    """Get --config-arg from arguments"""
+    """Get --config-file arg from arguments
+    """
     p = ArgumentParser()
     p.add_argument('--config-file', default='')
     config_file = p.parse_known_args(arguments)[0].config_file
@@ -207,12 +222,12 @@ def config_file_arg(arguments):
 
 
 def config_files(root):
-    """Note that later configs files overwrite earlier ones.
+    """Returns a list of the global config files and any local config files
+    found in the root directory.
 
-    That is, later ones are more important. It may be better to check whether
-    any locals exist, and if they do use them else use DEFAULT_CONFIG.
-    Both are easy to implement, just need to pick a route (could even
-    be a config option).
+    Note as we pass this into config.read, where later config files are
+    considered more important than preceding. That is files override the
+    settings of previous files.
 
     """
     return [DEFAULT_CONFIG] + [os.path.join(root, c) for c in PROJECT_CONFIG]

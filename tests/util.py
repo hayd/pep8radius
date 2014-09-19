@@ -1,3 +1,5 @@
+"""Everythin' you'll ever need in the tests..."""
+
 from __future__ import with_statement
 
 from contextlib import contextmanager
@@ -26,6 +28,8 @@ from pep8radius.diff import modified_lines_from_udiff, get_diff
 from pep8radius.shell import CalledProcessError
 from pep8radius.vcs import (VersionControl, Git, Bzr, Hg,
                             using_git, using_hg, using_bzr)
+
+
 PEP8RADIUS = os.path.join(ROOT_DIR, 'pep8radius', '__init__.py')
 TEST_DIR = os.path.abspath(os.path.dirname(__file__))
 TEMP_DIR = os.path.join(TEST_DIR, 'temp')
@@ -54,16 +58,16 @@ def from_dir(cwd):
 
 
 def pep8radius_main(args, vc=None, cwd=TEMP_DIR, apply_config=False):
-    if isinstance(args, list):
-        args = parse_args(args)
-    with captured_output() as (out, err):
-        try:
-            from pep8radius.main import main
-            with from_dir(cwd):
+    with from_dir(cwd):
+        if isinstance(args, list):
+            args = parse_args(args, apply_config=apply_config)
+        with captured_output() as (out, err):
+            try:
+                from pep8radius.main import main
                 main(args, vc=vc, apply_config=apply_config)
-        except SystemExit:
-            pass
-    return out.getvalue().strip()
+            except SystemExit:
+                pass
+        return out.getvalue().strip()
 
 
 def mk_temp_dirs():
@@ -85,7 +89,7 @@ def save(contents, f, cwd=TEMP_DIR):
 
 
 def remove(filename):
-    """remove and don't raise if missing"""
+    """Delete file filename and don't raise if missing."""
     try:
         os.remove(filename)
     except OSError:
@@ -93,9 +97,13 @@ def remove(filename):
 
 
 def remove_dir(directory):
-    """rmtree, overcoming reported testing issue on Windows*.
+    """Delete directory and all contained files and subdirectories.
+
+    Note: this is the same as the shutil's rmtree function but overcomes
+    a reported issue on Windows*.
 
     *Due to permissions (being able to create but not remove files).
+
     """
     try:
         rmtree(directory)
