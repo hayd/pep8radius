@@ -20,7 +20,8 @@ class TestRadius(TestCase):
         into expected."""
         temp_file = os.path.join(cwd, 'temp.py')
 
-        options = parse_args(options, apply_config=apply_config)
+        with from_dir(cwd):
+            options = parse_args(options, apply_config=apply_config)
 
         # TODO remove this color hack, and actually test printing color diff
         options.no_color = True
@@ -151,16 +152,16 @@ class MixinTests:
         self.assertEqual(out.getvalue(), '')
 
     def test_config(self):
-        cfg = os.path.join(TEMP_DIR, '.pep8')
-        with open(cfg, mode='w') as f:
+        LOCAL_CONFIG = os.path.join(TEMP_DIR, '.pep8')
+        with open(LOCAL_CONFIG, mode='w') as f:
             f.write("[pep8]\nindent-size=2")
         original = "def f(x):\n    return 2*x\n"
         modified = "def f(x):\n    return 3*x\n"
         expected = "def f(x):\n  return 3 * x\n"
         self.check(original, modified, expected,
-                   'test_config', ['--config=%s' % cfg],
+                   'test_config', [],
                    apply_config=True)
-        remove(cfg)
+        remove(LOCAL_CONFIG)
 
 if __name__ == '__main__':
     test_main()
