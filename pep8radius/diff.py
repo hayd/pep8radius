@@ -10,15 +10,12 @@ import re
 def modified_lines_from_udiff(udiff):
     """Extract from a udiff an iterator of tuples of (start, end) line numbers.
 
-    Note: these are returned in descending order.
-
     """
-    chunks = re.split('\n@@ [^\n]+\n', udiff)[:0:-1]  # reversed order
+    chunks = re.split('\n@@ [^\n]+\n', udiff)[1:]
 
     line_numbers = re.findall('@@\s[+-]\d+,\d+ \+(\d+)', udiff)
-    line_numbers = list(map(int, line_numbers))[::-1]
+    line_numbers = list(map(int, line_numbers))
 
-    # Note: these were reversed as can modify number of lines
     for c, start in zip(chunks, line_numbers):
         ilines = enumerate((line for line in c.splitlines()
                             if not line.startswith('-')),
