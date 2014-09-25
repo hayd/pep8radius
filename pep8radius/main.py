@@ -113,19 +113,6 @@ def create_parser():
                         'multiple -v result in more verbose messages '
                         '(one less -v is passed to autopep8)')
 
-    cg = parser.add_argument_group('config',
-                                   'Change default options based on global '
-                                   'or local (project) config files.')
-    cg.add_argument('--global-config',
-                    default=DEFAULT_CONFIG,
-                    help='path to a global pep8 config file ' +
-                    '(default: %s);' % DEFAULT_CONFIG +
-                    " if this file does not exist then this is ignored.")
-    cg.add_argument('--ignore-local-config', action='store_true',
-                    help="don't look for and apply local config files; "
-                    'if not passed, defaults are updated with any '
-                    "config files in the project's root dir")
-
     ap = parser.add_argument_group('pep8', 'Pep8 options to pass to autopep8.')
     ap.add_argument('-p', '--pep8-passes', metavar='n',
                     default=-1, type=int,
@@ -169,6 +156,19 @@ def create_parser():
     df.add_argument('--force-wrap', action='store_true',
                     help='force descriptions to be wrapped even if it may '
                     'result in a mess')
+
+    cg = parser.add_argument_group('config',
+                                   'Change default options based on global '
+                                   'or local (project) config files.')
+    cg.add_argument('--global-config',
+                    default=DEFAULT_CONFIG,
+                    help='path to a global pep8 config file ' +
+                    '(default: %s);' % DEFAULT_CONFIG +
+                    " if this file does not exist then this is ignored.")
+    cg.add_argument('--ignore-local-config', action='store_true',
+                    help="don't look for and apply local config files; "
+                    'if not passed, defaults are updated with any '
+                    "config files in the project's root dir")
 
     return parser
 
