@@ -6,13 +6,12 @@ from __future__ import print_function
 import os
 import sys
 
-from argparse import ArgumentParser
 try:
     from ConfigParser import SafeConfigParser, NoSectionError
 except ImportError:  # py3, pragma: no cover
     from configparser import SafeConfigParser, NoSectionError
 
-from pep8radius.radius import Radius
+from pep8radius.radius import Radius, RadiusFromDiff
 from pep8radius.shell import CalledProcessError  # with 2.6 compat
 
 __version__ = version = '0.9.0'
@@ -66,7 +65,11 @@ def main(args=None, vc=None, cwd=None, apply_config=False):
                 args = parse_args(args, apply_config=apply_config)
             except TypeError:
                 pass  # args is already a Namespace (testing)
-            r = Radius(rev=args.rev, options=args, vc=vc, cwd=cwd)
+            if args.from_diff:
+                r = RadiusFromDiff(options.from_diff.read(),
+                                   options=args, cwd=cwd)
+            else:
+                r = Radius(rev=args.rev, options=args, vc=vc, cwd=cwd)
         except NotImplementedError as e:  # pragma: no cover
             print(e)
             sys.exit(1)
@@ -83,6 +86,8 @@ def main(args=None, vc=None, cwd=None, apply_config=False):
 
 def create_parser():
     """Create the parser for the pep8radius CLI."""
+    from argparse import ArgumentParser, FileType
+
     description = ("PEP8 clean only the parts of the files which you have "
                    "touched since the last commit, previous commit or "
                    "branch.")
@@ -112,6 +117,10 @@ def create_parser():
                         help='print verbose messages; '
                         'multiple -v result in more verbose messages '
                         '(one less -v is passed to autopep8)')
+    parser.add_argument('--from-diff', type=FileType('r'),
+                        help="Rather than calling out to version control, "
+                             "just pass in a diff. "
+                             "The modified lines will be fixed.")
 
     ap = parser.add_argument_group('pep8', 'Pep8 options to pass to autopep8.')
     ap.add_argument('-p', '--pep8-passes', metavar='n',

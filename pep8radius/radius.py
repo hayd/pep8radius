@@ -11,9 +11,6 @@ from __future__ import print_function
 
 from sys import version_info
 
-from pep8radius.diff import get_diff, udiff_lines_fixed, print_diff
-from pep8radius.vcs import VersionControl
-
 
 if version_info[0] > 2:  # py3, pragma: no cover
     basestring = str
@@ -25,6 +22,8 @@ class Radius(object):
     previous commit or branch."""
 
     def __init__(self, rev=None, options=None, vc=None, cwd=None):
+        from pep8radius.vcs import VersionControl
+
         if vc is None:
             vc = VersionControl.which()
         elif isinstance(vc, basestring):
@@ -33,8 +32,14 @@ class Radius(object):
             assert(issubclass(vc, VersionControl))
         self.vc = vc(cwd=cwd)
 
-        # pep8radius specific options
         self.rev = self.vc.branch_point(rev)
+        self._init_options(options)
+        # Note: This may raise a CalledProcessError, if it does it means
+        # that there's been an error with the version control command.
+        self.filenames_diff = self.vc.get_filenames_diff(self)
+
+    def _init_options(self, options):
+        # pep8radius specific options
         from pep8radius.main import parse_args
         self.options = options if options else parse_args([''])
         self.verbose = self.options.verbose
@@ -47,9 +52,8 @@ class Radius(object):
         self.options.in_place = False
         self.options.diff = False
 
-        # Note: This may raise a CalledProcessError, if it does it means
-        # that there's been an error with the version control command.
-        self.filenames_diff = self.vc.get_filenames_diff(self)
+    def modified_lines(self, file_name):
+        return self.vc.modified_lines(self, file_name)
 
     def fix(self):
         """Runs fix_file on each modified file.
@@ -57,6 +61,8 @@ class Radius(object):
         - Prints progress and diff depending on options.
 
         """
+        from pep8radius.diff import print_diff, udiff_lines_fixed
+
         n = len(self.filenames_diff)
         _maybe_print('Applying autopep8 to touched lines in %s file(s).' % n)
 
@@ -96,11 +102,34 @@ class Radius(object):
         """
         # We hope that a CalledProcessError would have already raised
         # during the init if it were going to raise here.
-        modified_lines = self.vc.modified_lines(self, file_name)
+        modified_lines = self.modified_lines(file_name)
 
         return fix_file(file_name, modified_lines, self.options,
                         in_place=self.in_place, diff=True,
                         verbose=self.verbose)
+
+
+class RadiusFromDiff(Radius):
+    """PEP8 clean from a diff, rather than generating the diff from version
+    control."""
+
+    def __init__(self, diff, options=None, cwd=None):
+        import re
+        # TODO is cwd needed here?
+        self._init_options(options)
+
+        start_re = '--- .*?/(.*?)\n\+\+\+ .*?'
+        split = re.split(start_re, diff)
+        from collections import OrderedDict
+        self.diffs = OrderedDict(zip(split[1::2],
+                                     split[2::2]))  # file_name: diff
+
+        self.filenames_diff = self.diffs.keys()
+
+    def modified_lines(self, file_name):
+        from pep8radius.diff import modified_lines_from_udiff
+        diff = self.diffs[file_name]
+        return list(modified_lines_from_udiff(diff))
 
 
 def fix_file(file_name, line_ranges, options=None, in_place=False,
@@ -114,6 +143,8 @@ def fix_file(file_name, line_ranges, options=None, in_place=False,
 
     """
     import codecs
+    from pep8radius.diff import get_diff
+
     try:
         with codecs.open(file_name, 'r', encoding='utf-8') as f:
             original = f.read()
