@@ -244,8 +244,8 @@ def global_config_arg(arguments):
 
 
 def local_config_files(root):
-    """Returns a list of (possible) config files in the project
-    root directory."""
+    """Returns a list of (possible) config files in the project root
+    directory."""
     return [os.path.join(root, c) for c in PROJECT_CONFIG]
 
 

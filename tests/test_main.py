@@ -85,7 +85,6 @@ class TestMain(TestCase):
                                 apply_config=True, root=TEMP_DIR)
         self.assertEqual(2, args_after.indent_size)
 
-
     def test_help(self):
         self.check_help()
 

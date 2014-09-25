@@ -8,9 +8,8 @@ import re
 
 
 def modified_lines_from_udiff(udiff):
-    """Extract from a udiff an iterator of tuples of (start, end) line numbers.
-
-    """
+    """Extract from a udiff an iterator of tuples of (start, end) line
+    numbers."""
     chunks = re.split('\n@@ [^\n]+\n', udiff)[1:]
 
     line_numbers = re.findall('@@\s[+-]\d+,\d+ \+(\d+)', udiff)
