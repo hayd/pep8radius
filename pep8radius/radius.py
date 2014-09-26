@@ -110,6 +110,7 @@ class Radius(object):
 
 
 class RadiusFromDiff(Radius):
+
     """PEP8 clean from a diff, rather than generating the diff from version
     control."""
 
@@ -174,7 +175,8 @@ def fix_code(source_code, line_ranges, options=None, verbose=0):
 
     """
     if options is None:
-        parse_args()
+        from pep8radius.main import parse_args
+        options = parse_args()
 
     line_ranges = reversed(line_ranges)
     # Apply line fixes "up" the file (i.e. in reverse) so that
