@@ -22,23 +22,26 @@ class Radius(object):
     previous commit or branch."""
 
     def __init__(self, rev=None, options=None, vc=None, cwd=None):
-        from pep8radius.vcs import VersionControl
+        self._init_options(options, cwd=cwd)
 
+        from pep8radius.vcs import VersionControl
         if vc is None:
             vc = VersionControl.which()
         elif isinstance(vc, basestring):
             vc = VersionControl.from_string(vc)
         else:
             assert(issubclass(vc, VersionControl))
-        self.vc = vc(cwd=cwd)
+        self.vc = vc(cwd=self.cwd)
 
         self.rev = self.vc.branch_point(rev)
-        self._init_options(options)
         # Note: This may raise a CalledProcessError, if it does it means
         # that there's been an error with the version control command.
         self.filenames_diff = self.vc.get_filenames_diff(self)
 
-    def _init_options(self, options):
+    def _init_options(self, options, cwd):
+        from os import getcwd
+        self.cwd = cwd or getcwd()
+
         # pep8radius specific options
         from pep8radius.main import parse_args
         self.options = options if options else parse_args([''])
@@ -51,6 +54,10 @@ class Radius(object):
         self.options.verbose = max(0, self.options.verbose - 1)
         self.options.in_place = False
         self.options.diff = False
+
+    @staticmethod
+    def from_diff(diff, options=None, cwd=None):
+        return RadiusFromDiff(diff=diff, options=options, cwd=cwd)
 
     def modified_lines(self, file_name):
         return self.vc.modified_lines(self, file_name)
@@ -106,7 +113,7 @@ class Radius(object):
 
         return fix_file(file_name, modified_lines, self.options,
                         in_place=self.in_place, diff=True,
-                        verbose=self.verbose)
+                        verbose=self.verbose, cwd=self.cwd)
 
 
 class RadiusFromDiff(Radius):
@@ -116,9 +123,10 @@ class RadiusFromDiff(Radius):
 
     def __init__(self, diff, options=None, cwd=None):
         import re
-        # TODO is cwd needed here?
-        self._init_options(options)
+        self._init_options(options, cwd=cwd)
 
+        # grabbing the filenames from a diff
+        # TODO move to diff.py ?
         start_re = '--- .*?/(.*?)\n\+\+\+ .*?'
         split = re.split(start_re, diff)
         from collections import OrderedDict
@@ -134,7 +142,7 @@ class RadiusFromDiff(Radius):
 
 
 def fix_file(file_name, line_ranges, options=None, in_place=False,
-             diff=False, verbose=0):
+             diff=False, verbose=0, cwd=None):
     """Calls fix_code on the source code from the passed in file over the given
     line_ranges.
 
@@ -144,20 +152,29 @@ def fix_file(file_name, line_ranges, options=None, in_place=False,
 
     """
     import codecs
+    from os import getcwd
     from pep8radius.diff import get_diff
+    from pep8radius.shell import from_dir
 
-    try:
-        with codecs.open(file_name, 'r', encoding='utf-8') as f:
-            original = f.read()
-    except IOError:
-        # file has been removed
-        return ''
+    if cwd is None:
+        cwd = getcwd()
+
+    with from_dir(cwd):
+        try:
+            with codecs.open(file_name, 'r', encoding='utf-8') as f:
+                original = f.read()
+        except IOError:
+            # Most likely the file has been removed.
+            # Note: it would be nice if we could raise here, specifically
+            # for the case of passing in a diff when in the wrong directory.
+            return ''
 
     fixed = fix_code(original, line_ranges, options, verbose=verbose)
 
     if in_place:
-        with codecs.open(file_name, 'w', encoding='utf-8') as f:
-            f.write(fixed)
+        with from_dir(cwd):
+            with codecs.open(file_name, 'w', encoding='utf-8') as f:
+                f.write(fixed)
 
     return get_diff(original, fixed, file_name) if diff else fixed
 
@@ -170,8 +187,10 @@ def fix_code(source_code, line_ranges, options=None, verbose=0):
     Example
     -------
     >>> code = "def f( x ):\n  if True:\n    return 2*x"
-    >>> fix_code(code, [(1, 1), (3, 3)])
-    "def f(x):\n  if True:\n      return 2 * x\n"
+    >>> print(fix_code(code, [(1, 1), (3, 3)]))
+    def f(x):
+      if True:
+          return 2 * x
 
     """
     if options is None:

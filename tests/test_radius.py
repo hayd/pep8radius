@@ -163,5 +163,22 @@ class MixinTests:
                    apply_config=True)
         remove(LOCAL_CONFIG)
 
+
+class TestRadiusFromDiff(TestCase):
+
+    def test_from_diff(self):
+        original = 'def poor_indenting():\n  a = 1\n  b = 2\n  return a + b\n\nfoo = 1; bar = 2; print(foo * bar)\na=1; b=2; c=3\nd=7\n\ndef f(x = 1, y = 2):\n    return x + y\n'
+        modified = 'def poor_indenting():\n  a = 1\n  b = 2\n  return a + b\n\nfoo = 1; bar = 2; print(foo * bar)\na=1; b=42; c=3\nd=7\n\ndef f(x = 1, y = 2):\n    return x + y\n'
+        expected = 'def poor_indenting():\n  a = 1\n  b = 2\n  return a + b\n\nfoo = 1; bar = 2; print(foo * bar)\na = 1\nb = 42\nc = 3\nd=7\n\ndef f(x = 1, y = 2):\n    return x + y\n'
+        diff = get_diff(original, modified, 'foo.py')
+        with open(os.path.join(TEMP_DIR, 'foo.py'), 'w') as f:
+            f.write(modified)
+        args = parse_args(['--diff', '--no-color'])
+        r = Radius.from_diff(diff, options=args, cwd=TEMP_DIR)
+        with captured_output() as (out, err):
+            r.fix()
+        exp_diff = get_diff(modified, expected, 'foo.py')
+        self.assertEqual(out.getvalue(), exp_diff)
+
 if __name__ == '__main__':
     test_main()

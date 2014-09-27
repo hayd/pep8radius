@@ -6,6 +6,7 @@ Note: We also monkey-patch subprocess for python 2.6 to
 give feature parity with later versions.
 
 """
+from contextlib import contextmanager
 
 
 try:
@@ -72,3 +73,14 @@ def _clean_output(out):
     except AttributeError:  # python3, pragma: no cover
         pass
     return out.strip()
+
+
+@contextmanager
+def from_dir(cwd):
+    import os
+    curdir = os.getcwd()
+    try:
+        os.chdir(cwd)
+        yield
+    finally:
+        os.chdir(curdir)

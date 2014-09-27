@@ -25,7 +25,7 @@ from pep8radius import (Radius,
                         parse_args,
                         version)
 from pep8radius.diff import modified_lines_from_udiff, get_diff
-from pep8radius.shell import CalledProcessError
+from pep8radius.shell import CalledProcessError, from_dir
 from pep8radius.vcs import (VersionControl, Git, Bzr, Hg,
                             using_git, using_hg, using_bzr)
 
@@ -45,16 +45,6 @@ def captured_output():
         yield sys.stdout, sys.stderr
     finally:
         sys.stdout, sys.stderr = old_out, old_err
-
-
-@contextmanager
-def from_dir(cwd):
-    curdir = os.getcwd()
-    try:
-        os.chdir(cwd)
-        yield
-    finally:
-        os.chdir(curdir)
 
 
 def pep8radius_main(args, vc=None, cwd=TEMP_DIR, apply_config=False):

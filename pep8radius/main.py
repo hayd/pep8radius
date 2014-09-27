@@ -65,9 +65,9 @@ def main(args=None, vc=None, cwd=None, apply_config=False):
                 args = parse_args(args, apply_config=apply_config)
             except TypeError:
                 pass  # args is already a Namespace (testing)
-            if args.from_diff:
-                r = RadiusFromDiff(options.from_diff.read(),
-                                   options=args, cwd=cwd)
+            if args.from_diff:  # pragma: no cover
+                r = Radius.from_diff(options.from_diff.read(),
+                                     options=args, cwd=cwd)
             else:
                 r = Radius(rev=args.rev, options=args, vc=vc, cwd=cwd)
         except NotImplementedError as e:  # pragma: no cover

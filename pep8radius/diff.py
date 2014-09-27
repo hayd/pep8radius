@@ -39,8 +39,8 @@ def get_diff(original, fixed, file_name,
 
     from difflib import unified_diff
     diff = unified_diff(original, fixed,
-                        os.path.join(file_name, original_label),
-                        os.path.join(file_name, fixed_label),
+                        os.path.join(original_label, file_name),
+                        os.path.join(fixed_label, file_name),
                         lineterm=newline)
     text = ''
     for line in diff:
