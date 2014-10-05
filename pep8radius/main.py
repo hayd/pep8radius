@@ -89,7 +89,7 @@ def create_parser():
     from argparse import ArgumentParser, FileType
 
     description = ("PEP8 clean only the parts of the files which you have "
-                   "touched since the last commit, previous commit or "
+                   "touched since the last commit, a previous commit or "
                    "branch.")
     epilog = ("Run before you commit, against a previous commit or "
               "branch before merging.")

@@ -33,10 +33,12 @@ class Radius(object):
             assert(issubclass(vc, VersionControl))
         self.vc = vc(cwd=self.cwd)
 
+        self.root = self.vc.root
         self.rev = self.vc.branch_point(rev)
         # Note: This may raise a CalledProcessError, if it does it means
         # that there's been an error with the version control command.
-        self.filenames_diff = self.vc.get_filenames_diff(self)
+        filenames = self.vc.get_filenames_diff(self)
+        self.filenames_diff = self._clean_filenames(filenames)
 
     def _init_options(self, options, cwd):
         from os import getcwd
@@ -54,6 +56,15 @@ class Radius(object):
         self.options.verbose = max(0, self.options.verbose - 1)
         self.options.in_place = False
         self.options.diff = False
+
+    def _clean_filenames(self, filenames):
+        import os
+        if self.options.exclude:
+            # TODO do we have to take this from root dir?
+            from glob import fnmatch
+            for pattern in self.options.exclude:
+                filenames.difference_update(fnmatch.filter(filenames, pattern))
+        return sorted(os.path.join(self.root, f) for f in filenames)
 
     @staticmethod
     def from_diff(diff, options=None, cwd=None):
@@ -129,11 +140,11 @@ class RadiusFromDiff(Radius):
         # TODO move to diff.py ?
         start_re = '--- .*?/(.*?)\n\+\+\+ .*?'
         split = re.split(start_re, diff)
-        from collections import OrderedDict
-        self.diffs = OrderedDict(zip(split[1::2],
-                                     split[2::2]))  # file_name: diff
+        self.root = cwd  # I'm not sure this is correct solution.
+        self.diffs = dict(zip(split[1::2],
+                              split[2::2]))  # file_name: diff
 
-        self.filenames_diff = self.diffs.keys()
+        self.filenames_diff = set(self.diffs.keys())
 
     def modified_lines(self, file_name):
         from pep8radius.diff import modified_lines_from_udiff
