@@ -184,9 +184,10 @@ def parse_args(arguments=None, root=None, apply_config=False):
         arguments = []
 
     parser = create_parser()
-    if apply_config:
-        apply_config_defaults(parser, arguments, root=root)
     args = parser.parse_args(arguments)
+    if apply_config:
+        parser = apply_config_defaults(parser, args, root=root)
+        args = parser.parse_args(arguments)
 
     # sanity check args (from autopep8)
     if args.max_line_length <= 0:  # pragma: no cover
@@ -211,18 +212,16 @@ def parse_args(arguments=None, root=None, apply_config=False):
     return args
 
 
-def apply_config_defaults(parser, arguments, root):
+def apply_config_defaults(parser, args, root):
     """Update the parser's defaults from either the arguments' config_arg or
     the config files given in config_files(root)."""
     if root is None:
         from pep8radius.vcs import VersionControl
         root = VersionControl.which().root_dir()
 
-    global_config_file = global_config_arg(arguments) or DEFAULT_CONFIG
-
     config = SafeConfigParser()
-    config.read(global_config_file)
-    if '--ignore-local-config' not in arguments:
+    config.read(args.global_config)
+    if not args.ignore_local_config:
         config.read(local_config_files(root))
 
     try:
@@ -232,15 +231,6 @@ def apply_config_defaults(parser, arguments, root):
     except NoSectionError:
         pass  # just do nothing, potentially this could raise ?
     return parser
-
-
-def global_config_arg(arguments):
-    """Get --global-config arg from arguments.
-    """
-    for arg in arguments:
-        if arg.startswith('--global-config'):
-            config_file = arg[16:]
-            return os.path.expanduser(config_file)
 
 
 def local_config_files(root):
