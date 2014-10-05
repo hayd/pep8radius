@@ -95,21 +95,15 @@ def create_parser():
     parser.add_argument('rev',
                         help='commit or name of branch to compare against',
                         nargs='?')
+
     parser.add_argument('--version',
                         help='print version number and exit',
                         action='store_true')
 
-    parser.add_argument('--config',
-                        default='',
-                        help='path to pep8 config file; '
-                        "don't pass anything and global and local "
-                        'config files will be used; pass False or '
-                        'a non-existent file to use defaults')
     parser.add_argument('-d', '--diff', action='store_true', dest='diff',
                         help='print the diff of fixed source vs original')
     parser.add_argument('-i', '--in-place', action='store_true',
                         help="make the fixes in place; modify the files")
-
     parser.add_argument('--no-color', action='store_true',
                         help='do not print diffs in color '
                              '(default is to use color)')
@@ -163,6 +157,19 @@ def create_parser():
                     help='force descriptions to be wrapped even if it may '
                     'result in a mess')
 
+    cg = parser.add_argument_group('config',
+                                   'Change default options based on global '
+                                   'or local (project) config files.')
+    cg.add_argument('--global-config',
+                    default=DEFAULT_CONFIG,
+                    help='path to a global pep8 config file ' +
+                    '(default: %s);' % DEFAULT_CONFIG +
+                    " if this file does not exist then this is ignored.")
+    cg.add_argument('--ignore-local-config', action='store_true',
+                    help="don't look for and apply local config files; "
+                    'if not passed, defaults are updated with any '
+                    "config files in the project's root dir")
+
     return parser
 
 
@@ -211,10 +218,13 @@ def apply_config_defaults(parser, arguments, root):
         from pep8radius.vcs import VersionControl
         root = VersionControl.which().root_dir()
 
-    config_file = config_arg(arguments)
+    global_config_file = global_config_arg(arguments) or DEFAULT_CONFIG
 
     config = SafeConfigParser()
-    config.read(config_file or config_files(root))
+    config.read(global_config_file)
+    if '--ignore-local-config' not in arguments:
+        config.read(local_config_files(root))
+
     try:
         defaults = dict((k.replace('-', '_'), v)
                         for k, v in config.items("pep8"))
@@ -224,29 +234,19 @@ def apply_config_defaults(parser, arguments, root):
     return parser
 
 
-def config_arg(arguments):
-    """Get --config arg from arguments.
+def global_config_arg(arguments):
+    """Get --global-config arg from arguments.
     """
     for arg in arguments:
-        if arg.startswith('--config'):
-            config_file = arg[9:]
+        if arg.startswith('--global-config'):
+            config_file = arg[16:]
             return os.path.expanduser(config_file)
 
 
-def config_files(root, home='~'):
-    """Returns a list of the global config files and local config files
-    found in the root directory.
-
-    Note as we pass this into config.read, where later config files are
-    considered more important than preceding. That is later files override
-    the settings of previous files.
-
-    """
-    home = os.path.expanduser('~')
-    local_configs = [os.path.join(root, c) for c in PROJECT_CONFIG]
-    global_configs = [DEFAULT_CONFIG] + [os.path.join(home, c)
-                                         for c in PROJECT_CONFIG]
-    return global_configs + local_configs
+def local_config_files(root):
+    """Returns a list of (possible) config files in the project root
+    directory."""
+    return [os.path.join(root, c) for c in PROJECT_CONFIG]
 
 
 def _split_comma_separated(string):

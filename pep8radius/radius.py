@@ -58,14 +58,13 @@ class Radius(object):
 
         """
         n = len(self.filenames_diff)
-
-        self.p('Applying autopep8 to touched lines in %s file(s).' % n)
+        _maybe_print('Applying autopep8 to touched lines in %s file(s).' % n)
 
         total_lines_changed = 0
         pep8_diffs = []
         for i, file_name in enumerate(self.filenames_diff, start=1):
-            self.p('%s/%s: %s: ' % (i, n, file_name), end='')
-            self.p('', min_=2)
+            _maybe_print('%s/%s: %s: ' % (i, n, file_name), end='')
+            _maybe_print('', min_=2)
 
             p_diff = self.fix_file(file_name)
             lines_changed = udiff_lines_fixed(p_diff) if p_diff else 0
@@ -75,11 +74,13 @@ class Radius(object):
                 pep8_diffs.append(p_diff)
 
         if self.in_place:
-            self.p('pep8radius fixed %s lines in %s files.'
-                   % (total_lines_changed, n))
+            _maybe_print('pep8radius fixed %s lines in %s files.'
+                         % (total_lines_changed, n),
+                         verbose=self.verbose)
         else:
-            self.p('pep8radius would fix %s lines in %s files.'
-                   % (total_lines_changed, n))
+            _maybe_print('pep8radius would fix %s lines in %s files.'
+                         % (total_lines_changed, n),
+                         verbose=self.verbose)
 
         if self.diff:
             for diff in pep8_diffs:
@@ -93,58 +94,100 @@ class Radius(object):
         - Prints dots to show progress depending on options.
 
         """
-        import codecs
-        try:
-            with codecs.open(file_name, 'r', encoding='utf-8') as f:
-                original = f.read()
-        except IOError:
-            # file has been removed
-            return ''
-
         # We hope that a CalledProcessError would have already raised
         # during the init if it were going to raise here.
-        modified_lines_descending = self.vc.modified_lines(self, file_name)
+        modified_lines = self.vc.modified_lines(self, file_name)
 
-        # Apply line fixes "up" the file (i.e. in reverse) so that
-        # fixes do not affect changes we're yet to make.
-        partial = original
-        for start, end in modified_lines_descending:
-            partial = self.fix_line_range(partial, start, end)
-            self.p('.', end='', max_=1)
-        self.p('', max_=1)
-        fixed = partial
+        return fix_file(file_name, modified_lines, self.options,
+                        in_place=self.in_place, diff=True,
+                        verbose=self.verbose)
 
-        if self.in_place:
-            with codecs.open(file_name, 'w', encoding='utf-8') as f:
-                f.write(fixed)
-        return get_diff(original, fixed, file_name)
 
-    def fix_line_range(self, f, start, end):
-        """Apply autopep8 between start and end of file f."""
-        # not sure on behaviour if outside range (indexing starts at 1)
-        start = max(start, 1)
+def fix_file(file_name, line_ranges, options=None, in_place=False,
+             diff=False, verbose=0):
+    """Calls fix_code on the source code from the passed in file over the given
+    line_ranges.
 
-        self.options.line_range = [start, end]
-        from autopep8 import fix_code
-        fixed = fix_code(f,   self.options)
+    - If diff then this returns the udiff for the changes, otherwise
+    returns the fixed code.
+    - If in_place the changes are written to the file.
 
-        if self.options.docformatter:
+    """
+    import codecs
+    try:
+        with codecs.open(file_name, 'r', encoding='utf-8') as f:
+            original = f.read()
+    except IOError:
+        # file has been removed
+        return ''
+
+    fixed = fix_code(original, line_ranges, options, verbose=verbose)
+
+    if in_place:
+        with codecs.open(file_name, 'w', encoding='utf-8') as f:
+            f.write(fixed)
+
+    return get_diff(original, fixed, file_name) if diff else fixed
+
+
+def fix_code(source_code, line_ranges, options=None, verbose=0):
+    """Apply autopep8 over the line_ranges, returns the corrected code.
+
+    Note: though this is not checked for line_ranges should not overlap.
+
+    Example
+    -------
+    >>> code = "def f( x ):\n  if True:\n    return 2*x"
+    >>> fix_code(code, [(1, 1), (3, 3)])
+    "def f(x):\n  if True:\n      return 2 * x\n"
+
+    """
+    if options is None:
+        parse_args()
+
+    line_ranges = reversed(line_ranges)
+    # Apply line fixes "up" the file (i.e. in reverse) so that
+    # fixes do not affect changes we're yet to make.
+    partial = source_code
+    for start, end in line_ranges:
+        partial = fix_line_range(partial, start, end, options)
+        _maybe_print('.', end='', max_=1, verbose=verbose)
+    _maybe_print('', max_=1, verbose=verbose)
+    fixed = partial
+    return fixed
+
+
+def fix_line_range(source_code, start, end, options):
+    """Apply autopep8 (and docformatter) between the lines start and end of
+    source."""
+    # TODO confirm behaviour outside range (indexing starts at 1)
+    start = max(start, 1)
+
+    options.line_range = [start, end]
+    from autopep8 import fix_code
+    fixed = fix_code(source_code, options)
+
+    try:
+        if options.docformatter:
             from docformatter import format_code
             fixed = format_code(
                 fixed,
-                summary_wrap_length=self.options.max_line_length - 1,
-                description_wrap_length=(self.options.max_line_length
-                                         - 2 * self.options.indent_size),
-                pre_summary_newline=self.options.pre_summary_newline,
-                post_description_blank=self.options.post_description_blank,
-                force_wrap=self.options.force_wrap,
+                summary_wrap_length=options.max_line_length - 1,
+                description_wrap_length=(options.max_line_length
+                                         - 2 * options.indent_size),
+                pre_summary_newline=options.pre_summary_newline,
+                post_description_blank=options.post_description_blank,
+                force_wrap=options.force_wrap,
                 line_range=[start, end])
+    except AttributeError:  # e.g. using autopep8.parse_args, pragma: no cover
+        pass
 
-        return fixed
+    return fixed
 
-    def p(self, something_to_print, end=None, min_=1, max_=99):
-        """Print if self.verbose is within min_ and max_."""
-        if min_ <= self.verbose <= max_:
-            import sys
-            print(something_to_print, end=end)
-            sys.stdout.flush()
+
+def _maybe_print(something_to_print, end=None, min_=1, max_=99, verbose=0):
+    """Print if verbose is within min_ and max_."""
+    if min_ <= verbose <= max_:
+        import sys
+        print(something_to_print, end=end)
+        sys.stdout.flush()

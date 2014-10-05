@@ -123,7 +123,7 @@ class VersionControl(object):
         """Returns the line numbers of a file which have been changed."""
         cmd = self.file_diff_cmd(r, file_name)
         diff = shell_out_ignore_exitcode(cmd, cwd=self.root)
-        return self.modified_lines_from_diff(diff)
+        return list(self.modified_lines_from_diff(diff))
 
     def modified_lines_from_diff(self, diff):
         """Returns the changed lines in a diff.

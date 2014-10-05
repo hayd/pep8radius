@@ -2,7 +2,19 @@ import autopep8
 from tests.util import *
 
 
+GLOBAL_CONFIG = os.path.join(TEMP_DIR, 'GLOBAL_CONFIG')
+LOCAL_CONFIG = os.path.join(TEMP_DIR, '.pep8')
+
+
 class TestMain(TestCase):
+
+    def setUp(self):
+        remove(LOCAL_CONFIG)
+        remove(GLOBAL_CONFIG)
+
+    def tearDown(self):
+        remove(GLOBAL_CONFIG)
+        remove(LOCAL_CONFIG)
 
     def test_autopep8_args(self):
         import autopep8
@@ -36,21 +48,42 @@ class TestMain(TestCase):
         afixes = shell_out(['autopep8', '--list-fixes'])
         self.assertEqual(fixes, afixes)
 
-    def test_config(self):
-        cfg = os.path.join(TEMP_DIR, '.pep8')
-        remove(cfg)
-
-        args_before = parse_args(apply_config=False)
+    def test_no_config(self):
+        args_before = parse_args(apply_config=False, root=TEMP_DIR)
         self.assertNotIn('E999', args_before.ignore)
 
-        with open(cfg, mode='w') as f:
+    def test_global_config(self):
+        with open(GLOBAL_CONFIG, mode='w') as f:
             f.write("[pep8]\nignore=E999")
-        args_after = parse_args(['--config=%s' % cfg], apply_config=True)
+        args_after = parse_args(['--global-config=%s' % GLOBAL_CONFIG],
+                                apply_config=True, root=TEMP_DIR)
         self.assertIn('E999', args_after.ignore)
-        args_after = parse_args(['--config=False'], apply_config=True)
+        args_after = parse_args(['--global-config=False'],
+                                apply_config=True, root=TEMP_DIR)
         self.assertNotIn('E999', args_after.ignore)
 
-        remove(cfg)
+    def test_local_config(self):
+        with open(LOCAL_CONFIG, mode='w') as f:
+            f.write("[pep8]\nignore=E999")
+        args_after = parse_args([''],
+                                apply_config=True, root=TEMP_DIR)
+        self.assertIn('E999', args_after.ignore)
+        args_after = parse_args(['--ignore-local-config'],
+                                apply_config=True, root=TEMP_DIR)
+        self.assertNotIn('E999', args_after.ignore)
+
+    def test_local_and_global_config(self):
+        with open(GLOBAL_CONFIG, mode='w') as f:
+            f.write("[pep8]\nindent-size=2")
+        with open(LOCAL_CONFIG, mode='w') as f:
+            f.write("[pep8]\nindent-size=3")
+        args_after = parse_args(['--global-config=%s' % GLOBAL_CONFIG],
+                                apply_config=True, root=TEMP_DIR)
+        self.assertEqual(3, args_after.indent_size)
+        args_after = parse_args(['--global-config=%s' % GLOBAL_CONFIG,
+                                 '--ignore-local-config'],
+                                apply_config=True, root=TEMP_DIR)
+        self.assertEqual(2, args_after.indent_size)
 
     def test_help(self):
         self.check_help()

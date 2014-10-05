@@ -7,7 +7,7 @@ class TestUDiffParsing(TestCase):
         with open(os.path.join(TEST_DIR, 'diff1.txt')) as f:
             example_udiff = f.read()
         lines = list(modified_lines_from_udiff(example_udiff))
-        assert(lines == [(444, 444), (424, 429), (54, 56)])
+        assert(lines == [(54, 56), (424, 429), (444, 444)])
 
 
 if __name__ == '__main__':

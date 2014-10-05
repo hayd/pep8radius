@@ -102,9 +102,6 @@ positional arguments:
 optional arguments:
   -h, --help            show this help message and exit
   --version             print version number and exit
-  --config CONFIG       path to pep8 config file; don't pass anything and
-                        global and local config files will be used; pass False
-                        or a non-existent file to use defaults
   -d, --diff            print the diff of fixed source vs original
   -i, --in-place        make the fixes in place; modify the files
   --no-color            do not print diffs in color (default is to use color)
@@ -139,6 +136,18 @@ docformatter:
                         docstring
   --force-wrap          force descriptions to be wrapped even if it may result
                         in a mess
+
+config:
+  Change default options based on global or local (project) config files.
+
+  --global-config GLOBAL_CONFIG
+                        path to a global pep8 config file (default:
+                        ~/.config/pep8); if this file does not exist then
+                        this is ignored.
+  --ignore-local-config
+                        don't look for and apply local config files; if not
+                        passed, defaults are updated with any config files in
+                        the project's root dir
 
 Run before you commit, against a previous commit or branch before merging.
 ```
