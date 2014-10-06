@@ -138,7 +138,7 @@ class RadiusFromDiff(Radius):
 
         # grabbing the filenames from a diff
         # TODO move to diff.py ?
-        start_re = '--- .*?/(.*?) \n\+\+\+ .*?'
+        start_re = '--- .*?/(.*?)\s*\n\+\+\+ .*?'
         split = re.split(start_re, diff)
         self.root = cwd  # I'm not sure this is correct solution.
         self.diffs = dict(zip(split[1::2],
