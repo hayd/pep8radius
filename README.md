@@ -71,6 +71,16 @@ which outputs the corrections as follows:
 
 ![git rad](https://cloud.githubusercontent.com/assets/1931852/4259933/f0589480-3b1c-11e4-89cf-565c28da700a.png)
 
+---
+
+You can pipe in a diff directly, to fix the lines modified in it with
+`--from-diff` (this is somewhat experimental, please report failing diffs!).  
+For example:
+
+```sh
+$ git diff master | pep8radius --diff --from-diff=-
+```
+
 Requirements
 ------------
 pep8radius uses [autopep8](https://pypi.python.org/pypi/autopep8), and in turn
