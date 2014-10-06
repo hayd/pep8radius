@@ -39,7 +39,8 @@ setup(
     name=NAME,
     version=version(),
     description="PEP8 clean only the parts of the files which you have touched"
-                " since the last commit, previous commit or branch.",
+                " since the last commit, a previous commit or (the merge-base"
+                " of) a branch.",
     long_description=readme(),
     license='MIT License',
     author='Andy Hayden',

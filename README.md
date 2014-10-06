@@ -99,11 +99,12 @@ Options
 ```sh
 $ pep8radius --help
 
-usage: pep8radius [-h] [--version] [--config CONFIG] [-d] [-i] [--no-color]
-                  [-v] [-p n] [-a] [--experimental] [--exclude globs]
-                  [--list-fixes] [--ignore errors] [--select errors]
-                  [--max-line-length n] [--indent-size n] [-f] [--no-blank]
-                  [--pre-summary-newline] [--force-wrap]
+usage: pep8radius [-h] [--version] [-d] [-i] [--no-color] [-v]
+                  [--from-diff DIFF] [-p n] [-a] [--experimental]
+                  [--exclude globs] [--list-fixes] [--ignore errors]
+                  [--select errors] [--max-line-length n] [--indent-size n]
+                  [-f] [--no-blank] [--pre-summary-newline] [--force-wrap]
+                  [--global-config GLOBAL_CONFIG] [--ignore-local-config]
                   [rev]
 
 PEP8 clean only the parts of the files which you have touched since the last
@@ -156,10 +157,9 @@ docformatter:
 config:
   Change default options based on global or local (project) config files.
 
-  --global-config GLOBAL_CONFIG
-                        path to a global pep8 config file (default:
-                        ~/.config/pep8); if this file does not exist then
-                        this is ignored
+  --global-config filename
+                        path to global pep8 config file; if this file does not
+                        exist then this is ignored (default: ~/.config/pep8)
   --ignore-local-config
                         don't look for and apply local config files; if not
                         passed, defaults are updated with any config files in

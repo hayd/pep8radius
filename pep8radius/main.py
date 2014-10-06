@@ -7,9 +7,9 @@ import os
 import sys
 
 try:
+    from configparser import ConfigParser as SafeConfigParser, NoSectionError
+except ImportError:  # py2, pragma: no cover
     from ConfigParser import SafeConfigParser, NoSectionError
-except ImportError:  # py3, pragma: no cover
-    from configparser import SafeConfigParser, NoSectionError
 
 from pep8radius.radius import Radius, RadiusFromDiff
 from pep8radius.shell import CalledProcessError  # with 2.6 compat
@@ -171,13 +171,14 @@ def create_parser():
                                    'or local (project) config files.')
     cg.add_argument('--global-config',
                     default=DEFAULT_CONFIG,
-                    help='path to a global pep8 config file ' +
-                    '(default: %s);' % DEFAULT_CONFIG +
-                    " if this file does not exist then this is ignored")
+                    metavar='filename',
+                    help='path to global pep8 config file; ' +
+                    " if this file does not exist then this is ignored" +
+                    '(default: %s)' % DEFAULT_CONFIG)
     cg.add_argument('--ignore-local-config', action='store_true',
                     help="don't look for and apply local config files; "
                     'if not passed, defaults are updated with any '
-                    "config files in the project's root dir")
+                    "config files in the project's root directory")
 
     return parser
 
@@ -237,7 +238,7 @@ def apply_config_defaults(parser, args, root):
         config.read(local_config_files(root))
 
     try:
-        defaults = dict((k.replace('-', '_'), v)
+        defaults = dict((k.lstrip('-').replace('-', '_'), v)
                         for k, v in config.items("pep8"))
         parser.set_defaults(**defaults)
     except NoSectionError:
