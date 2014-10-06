@@ -6,13 +6,12 @@ from __future__ import print_function
 import os
 import sys
 
-from argparse import ArgumentParser
 try:
     from ConfigParser import SafeConfigParser, NoSectionError
 except ImportError:  # py3, pragma: no cover
     from configparser import SafeConfigParser, NoSectionError
 
-from pep8radius.radius import Radius
+from pep8radius.radius import Radius, RadiusFromDiff
 from pep8radius.shell import CalledProcessError  # with 2.6 compat
 
 __version__ = version = '0.9.0'
@@ -66,7 +65,11 @@ def main(args=None, vc=None, cwd=None, apply_config=False):
                 args = parse_args(args, apply_config=apply_config)
             except TypeError:
                 pass  # args is already a Namespace (testing)
-            r = Radius(rev=args.rev, options=args, vc=vc, cwd=cwd)
+            if args.from_diff:  # pragma: no cover
+                r = Radius.from_diff(options.from_diff.read(),
+                                     options=args, cwd=cwd)
+            else:
+                r = Radius(rev=args.rev, options=args, vc=vc, cwd=cwd)
         except NotImplementedError as e:  # pragma: no cover
             print(e)
             sys.exit(1)
@@ -83,9 +86,11 @@ def main(args=None, vc=None, cwd=None, apply_config=False):
 
 def create_parser():
     """Create the parser for the pep8radius CLI."""
+    from argparse import ArgumentParser, FileType
+
     description = ("PEP8 clean only the parts of the files which you have "
-                   "touched since the last commit, previous commit or "
-                   "branch.")
+                   "touched since the last commit, a previous commit or "
+                   "(the merge-base of) a branch.")
     epilog = ("Run before you commit, against a previous commit or "
               "branch before merging.")
     parser = ArgumentParser(description=description,
@@ -112,6 +117,10 @@ def create_parser():
                         help='print verbose messages; '
                         'multiple -v result in more verbose messages '
                         '(one less -v is passed to autopep8)')
+    parser.add_argument('--from-diff', type=FileType('r'), metavar='DIFF',
+                        help="Experimental: rather than calling out to version"
+                             " control, just pass in a diff; "
+                             "the modified lines will be fixed")
 
     ap = parser.add_argument_group('pep8', 'Pep8 options to pass to autopep8.')
     ap.add_argument('-p', '--pep8-passes', metavar='n',
@@ -164,7 +173,7 @@ def create_parser():
                     default=DEFAULT_CONFIG,
                     help='path to a global pep8 config file ' +
                     '(default: %s);' % DEFAULT_CONFIG +
-                    " if this file does not exist then this is ignored.")
+                    " if this file does not exist then this is ignored")
     cg.add_argument('--ignore-local-config', action='store_true',
                     help="don't look for and apply local config files; "
                     'if not passed, defaults are updated with any '
@@ -216,12 +225,15 @@ def apply_config_defaults(parser, args, root):
     """Update the parser's defaults from either the arguments' config_arg or
     the config files given in config_files(root)."""
     if root is None:
-        from pep8radius.vcs import VersionControl
-        root = VersionControl.which().root_dir()
+        try:
+            from pep8radius.vcs import VersionControl
+            root = VersionControl.which().root_dir()
+        except NotImplementedError:
+            pass  # don't update local, could be using as module
 
     config = SafeConfigParser()
     config.read(args.global_config)
-    if not args.ignore_local_config:
+    if root and not args.ignore_local_config:
         config.read(local_config_files(root))
 
     try:

@@ -11,9 +11,6 @@ from __future__ import print_function
 
 from sys import version_info
 
-from pep8radius.diff import get_diff, udiff_lines_fixed, print_diff
-from pep8radius.vcs import VersionControl
-
 
 if version_info[0] > 2:  # py3, pragma: no cover
     basestring = str
@@ -25,16 +22,29 @@ class Radius(object):
     previous commit or branch."""
 
     def __init__(self, rev=None, options=None, vc=None, cwd=None):
+        self._init_options(options, cwd=cwd)
+
+        from pep8radius.vcs import VersionControl
         if vc is None:
             vc = VersionControl.which()
         elif isinstance(vc, basestring):
             vc = VersionControl.from_string(vc)
         else:
             assert(issubclass(vc, VersionControl))
-        self.vc = vc(cwd=cwd)
+        self.vc = vc(cwd=self.cwd)
+
+        self.root = self.vc.root
+        self.rev = self.vc.branch_point(rev)
+        # Note: This may raise a CalledProcessError, if it does it means
+        # that there's been an error with the version control command.
+        filenames = self.vc.get_filenames_diff(self)
+        self.filenames_diff = self._clean_filenames(filenames)
+
+    def _init_options(self, options, cwd):
+        from os import getcwd
+        self.cwd = cwd or getcwd()
 
         # pep8radius specific options
-        self.rev = self.vc.branch_point(rev)
         from pep8radius.main import parse_args
         self.options = options if options else parse_args([''])
         self.verbose = self.options.verbose
@@ -47,9 +57,21 @@ class Radius(object):
         self.options.in_place = False
         self.options.diff = False
 
-        # Note: This may raise a CalledProcessError, if it does it means
-        # that there's been an error with the version control command.
-        self.filenames_diff = self.vc.get_filenames_diff(self)
+    def _clean_filenames(self, filenames):
+        import os
+        if self.options.exclude:
+            # TODO do we have to take this from root dir?
+            from glob import fnmatch
+            for pattern in self.options.exclude:
+                filenames.difference_update(fnmatch.filter(filenames, pattern))
+        return sorted(os.path.join(self.root, f) for f in filenames)
+
+    @staticmethod
+    def from_diff(diff, options=None, cwd=None):
+        return RadiusFromDiff(diff=diff, options=options, cwd=cwd)
+
+    def modified_lines(self, file_name):
+        return self.vc.modified_lines(self, file_name)
 
     def fix(self):
         """Runs fix_file on each modified file.
@@ -57,6 +79,8 @@ class Radius(object):
         - Prints progress and diff depending on options.
 
         """
+        from pep8radius.diff import print_diff, udiff_lines_fixed
+
         n = len(self.filenames_diff)
         _maybe_print('Applying autopep8 to touched lines in %s file(s).' % n)
 
@@ -96,15 +120,40 @@ class Radius(object):
         """
         # We hope that a CalledProcessError would have already raised
         # during the init if it were going to raise here.
-        modified_lines = self.vc.modified_lines(self, file_name)
+        modified_lines = self.modified_lines(file_name)
 
         return fix_file(file_name, modified_lines, self.options,
                         in_place=self.in_place, diff=True,
-                        verbose=self.verbose)
+                        verbose=self.verbose, cwd=self.cwd)
+
+
+class RadiusFromDiff(Radius):
+
+    """PEP8 clean from a diff, rather than generating the diff from version
+    control."""
+
+    def __init__(self, diff, options=None, cwd=None):
+        import re
+        self._init_options(options, cwd=cwd)
+
+        # grabbing the filenames from a diff
+        # TODO move to diff.py ?
+        start_re = '--- .*?/(.*?)\s*\n\+\+\+ .*?'
+        split = re.split(start_re, diff)
+        self.root = cwd  # I'm not sure this is correct solution.
+        self.diffs = dict(zip(split[1::2],
+                              split[2::2]))  # file_name: diff
+
+        self.filenames_diff = set(self.diffs.keys())
+
+    def modified_lines(self, file_name):
+        from pep8radius.diff import modified_lines_from_udiff
+        diff = self.diffs[file_name]
+        return list(modified_lines_from_udiff(diff))
 
 
 def fix_file(file_name, line_ranges, options=None, in_place=False,
-             diff=False, verbose=0):
+             diff=False, verbose=0, cwd=None):
     """Calls fix_code on the source code from the passed in file over the given
     line_ranges.
 
@@ -114,18 +163,29 @@ def fix_file(file_name, line_ranges, options=None, in_place=False,
 
     """
     import codecs
-    try:
-        with codecs.open(file_name, 'r', encoding='utf-8') as f:
-            original = f.read()
-    except IOError:
-        # file has been removed
-        return ''
+    from os import getcwd
+    from pep8radius.diff import get_diff
+    from pep8radius.shell import from_dir
+
+    if cwd is None:
+        cwd = getcwd()
+
+    with from_dir(cwd):
+        try:
+            with codecs.open(file_name, 'r', encoding='utf-8') as f:
+                original = f.read()
+        except IOError:
+            # Most likely the file has been removed.
+            # Note: it would be nice if we could raise here, specifically
+            # for the case of passing in a diff when in the wrong directory.
+            return ''
 
     fixed = fix_code(original, line_ranges, options, verbose=verbose)
 
     if in_place:
-        with codecs.open(file_name, 'w', encoding='utf-8') as f:
-            f.write(fixed)
+        with from_dir(cwd):
+            with codecs.open(file_name, 'w', encoding='utf-8') as f:
+                f.write(fixed)
 
     return get_diff(original, fixed, file_name) if diff else fixed
 
@@ -138,12 +198,15 @@ def fix_code(source_code, line_ranges, options=None, verbose=0):
     Example
     -------
     >>> code = "def f( x ):\n  if True:\n    return 2*x"
-    >>> fix_code(code, [(1, 1), (3, 3)])
-    "def f(x):\n  if True:\n      return 2 * x\n"
+    >>> print(fix_code(code, [(1, 1), (3, 3)]))
+    def f(x):
+      if True:
+          return 2 * x
 
     """
     if options is None:
-        parse_args()
+        from pep8radius.main import parse_args
+        options = parse_args()
 
     line_ranges = reversed(line_ranges)
     # Apply line fixes "up" the file (i.e. in reverse) so that

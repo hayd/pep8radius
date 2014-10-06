@@ -144,15 +144,7 @@ class VersionControl(object):
         diff_files = shell_out_ignore_exitcode(cmd, cwd=self.root)
         diff_files = self.parse_diff_filenames(diff_files)
 
-        py_files = set(f for f in diff_files if f.endswith('.py'))
-
-        if r.options.exclude:
-            # TODO do we have to take this from root dir?
-            from glob import fnmatch
-            for pattern in r.options.exclude:
-                py_files.difference_update(fnmatch.filter(py_files, pattern))
-        return sorted(os.path.join(self.root, file_name)
-                      for file_name in py_files)
+        return set(f for f in diff_files if f.endswith('.py'))
 
 
 class Git(VersionControl):
