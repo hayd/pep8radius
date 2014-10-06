@@ -225,12 +225,15 @@ def apply_config_defaults(parser, args, root):
     """Update the parser's defaults from either the arguments' config_arg or
     the config files given in config_files(root)."""
     if root is None:
-        from pep8radius.vcs import VersionControl
-        root = VersionControl.which().root_dir()
+        try:
+            from pep8radius.vcs import VersionControl
+            root = VersionControl.which().root_dir()
+        except NotImplementedError:
+            pass  # don't update local, could be using as module
 
     config = SafeConfigParser()
     config.read(args.global_config)
-    if not args.ignore_local_config:
+    if root and not args.ignore_local_config:
         config.read(local_config_files(root))
 
     try:

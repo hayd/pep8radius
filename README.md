@@ -156,3 +156,83 @@ Run before you commit, against a previous commit or branch before merging.
 ```
 
 *For more information about these options see [autopep8](https://pypi.python.org/pypi/autopep8).*
+
+As a module
+-----------
+
+Pep8radius also exports lightweight wrappers around autopep8 so that you can
+fix line ranges of your code with `fix_code` or `fix_file`.
+
+Here's the example "bad code" from [autopep8's README](https://github.com/hhatto/autopep8/blob/master/README.rst#usage):
+
+```py
+import math, sys;
+
+def example1():
+    ####This is a long comment. This should be wrapped to fit within 72 characters.
+    some_tuple=(   1,2, 3,'a'  );
+    some_variable={'long':'Long code lines should be wrapped within 79 characters.',
+    'other':[math.pi, 100,200,300,9876543210,'This is a long string that goes on'],
+    'more':{'inner':'This whole logical line should be wrapped.',some_tuple:[1,
+    20,300,40000,500000000,60000000000000000]}}
+    return (some_tuple, some_variable)
+def example2(): return {'has_key() is deprecated':True}.has_key({'f':2}.has_key(''));
+class Example3(   object ):
+    def __init__    ( self, bar ):
+     #Comments should have a space after the hash.
+     if bar : bar+=1;  bar=bar* bar   ; return bar
+     else:
+                    some_string = """
+               Indentation in multiline strings should not be touched.
+Only actual code should be reindented.
+"""
+                    return (sys.path, some_string)
+```
+You can pep8 fix just the line ranges 1-1 (the imports) and 12-21 (the
+`Example3`class) with `pep8radius.fix_code(code, [(1, 1), (12, 21)])` (where
+code is a string of the above), which returns the code fixed within those
+ranges:
+```py
+import math
+import sys
+
+def example1():
+    ####This is a long comment. This should be wrapped to fit within 72 characters.
+    some_tuple=(   1,2, 3,'a'  );
+    some_variable={'long':'Long code lines should be wrapped within 79 characters.',
+    'other':[math.pi, 100,200,300,9876543210,'This is a long string that goes on'],
+    'more':{'inner':'This whole logical line should be wrapped.',some_tuple:[1,
+    20,300,40000,500000000,60000000000000000]}}
+    return (some_tuple, some_variable)
+def example2(): return {'has_key() is deprecated':True}.has_key({'f':2}.has_key(''));
+
+
+class Example3(object):
+
+    def __init__(self, bar):
+        # Comments should have a space after the hash.
+        if bar:
+            bar += 1
+            bar = bar * bar
+            return bar
+        else:
+            some_string = """
+                       Indentation in multiline strings should not be touched.
+Only actual code should be reindented.
+"""
+            return (sys.path, some_string)
+```
+You can use `fix_file` to do this directly on a file, which gives you the option
+of doing this in place.
+
+```py
+pep8radius.fix_code('code.py', [(1, 1), (12, 21)], in_place=True)
+```
+You can also pass the same arguments to pep8radius script itself using the
+`parse_args`. For example ignoring long lines (E501) and use the options from
+your global config files:
+```py
+args = pep8radius.parse_args(['--ignore=E501', '--ignore-local-config'],
+                             apply_config=True)
+pep8radius.fix_code(code, [(1, 1), (12, 21)], options=args)
+```
