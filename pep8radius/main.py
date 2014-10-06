@@ -14,7 +14,7 @@ except ImportError:  # py2, pragma: no cover
 from pep8radius.radius import Radius, RadiusFromDiff
 from pep8radius.shell import CalledProcessError  # with 2.6 compat
 
-__version__ = version = '0.9.0'
+__version__ = version = '0.9.1'
 
 
 DEFAULT_IGNORE = 'E24'
