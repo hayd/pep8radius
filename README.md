@@ -1,7 +1,9 @@
 pep8radius
 ----------
 
-[PEP8](http://legacy.python.org/dev/peps/pep-0008/) clean only the parts of the files touched since the last commit, a previous commit or branch.
+[PEP8](http://legacy.python.org/dev/peps/pep-0008/) clean only the parts of
+the files touched since the last commit, a previous commit or (the merge-base
+of) a branch.
 
 [![Current PyPi Version](http://img.shields.io/pypi/v/pep8radius.svg)](https://pypi.python.org/pypi/pep8radius)
 [![MIT licensed](http://img.shields.io/badge/license-MIT-brightgreen.svg)](http://choosealicense.com/licenses/mit/)
@@ -65,6 +67,7 @@ alias (which allows `git rad` and `git rad -i`):
 [alias]
     rad = !pep8radius master --diff --no-color $@ | cdiff --side-by-side
 ```
+which outputs the corrections as follows:
 
 ![git rad](https://cloud.githubusercontent.com/assets/1931852/4259933/f0589480-3b1c-11e4-89cf-565c28da700a.png)
 
