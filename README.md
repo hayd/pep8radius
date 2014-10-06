@@ -94,7 +94,7 @@ usage: pep8radius [-h] [--version] [--config CONFIG] [-d] [-i] [--no-color]
                   [rev]
 
 PEP8 clean only the parts of the files which you have touched since the last
-commit, previous commit or branch.
+commit, a previous commit or (the merge-base of) a branch.
 
 positional arguments:
   rev                   commit or name of branch to compare against
@@ -107,6 +107,9 @@ optional arguments:
   --no-color            do not print diffs in color (default is to use color)
   -v, --verbose         print verbose messages; multiple -v result in more
                         verbose messages (one less -v is passed to autopep8)
+  --from-diff DIFF      Experimental: rather than calling out to version
+                        control, just pass in a diff; the modified lines will
+                        be fixed
 
 pep8:
   Pep8 options to pass to autopep8.
@@ -143,7 +146,7 @@ config:
   --global-config GLOBAL_CONFIG
                         path to a global pep8 config file (default:
                         ~/.config/pep8); if this file does not exist then
-                        this is ignored.
+                        this is ignored
   --ignore-local-config
                         don't look for and apply local config files; if not
                         passed, defaults are updated with any config files in

@@ -90,7 +90,7 @@ def create_parser():
 
     description = ("PEP8 clean only the parts of the files which you have "
                    "touched since the last commit, a previous commit or "
-                   "branch.")
+                   "(the merge-base of) a branch.")
     epilog = ("Run before you commit, against a previous commit or "
               "branch before merging.")
     parser = ArgumentParser(description=description,
@@ -117,10 +117,10 @@ def create_parser():
                         help='print verbose messages; '
                         'multiple -v result in more verbose messages '
                         '(one less -v is passed to autopep8)')
-    parser.add_argument('--from-diff', type=FileType('r'),
-                        help="Rather than calling out to version control, "
-                             "just pass in a diff. "
-                             "The modified lines will be fixed.")
+    parser.add_argument('--from-diff', type=FileType('r'), metavar='DIFF',
+                        help="Experimental: rather than calling out to version"
+                             " control, just pass in a diff; "
+                             "the modified lines will be fixed")
 
     ap = parser.add_argument_group('pep8', 'Pep8 options to pass to autopep8.')
     ap.add_argument('-p', '--pep8-passes', metavar='n',
@@ -173,7 +173,7 @@ def create_parser():
                     default=DEFAULT_CONFIG,
                     help='path to a global pep8 config file ' +
                     '(default: %s);' % DEFAULT_CONFIG +
-                    " if this file does not exist then this is ignored.")
+                    " if this file does not exist then this is ignored")
     cg.add_argument('--ignore-local-config', action='store_true',
                     help="don't look for and apply local config files; "
                     'if not passed, defaults are updated with any '
