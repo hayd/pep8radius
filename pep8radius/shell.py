@@ -77,6 +77,7 @@ def _clean_output(out):
 
 @contextmanager
 def from_dir(cwd):
+    "Context manager to ensure in the cwd directory."
     import os
     curdir = os.getcwd()
     try:

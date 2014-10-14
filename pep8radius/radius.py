@@ -191,19 +191,19 @@ def fix_file(file_name, line_ranges, options=None, in_place=False,
 
 
 def fix_code(source_code, line_ranges, options=None, verbose=0):
-    """Apply autopep8 over the line_ranges, returns the corrected code.
+    '''Apply autopep8 over the line_ranges, returns the corrected code.
 
     Note: though this is not checked for line_ranges should not overlap.
 
     Example
     -------
-    >>> code = "def f( x ):\n  if True:\n    return 2*x"
+    >>> code = "def f( x ):\\n  if  True:\\n    return 2*x"
     >>> print(fix_code(code, [(1, 1), (3, 3)]))
     def f(x):
-      if True:
+      if  True:
           return 2 * x
 
-    """
+    '''
     if options is None:
         from pep8radius.main import parse_args
         options = parse_args()
