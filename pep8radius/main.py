@@ -69,9 +69,6 @@ def main(args=None, vc=None, cwd=None, apply_config=False):
                 r = Radius.from_diff(args.from_diff.read(),
                                      options=args, cwd=cwd)
             else:
-                print("oi")
-                import pep8radius
-                print(pep8radius.version)
                 r = Radius(rev=args.rev, options=args, vc=vc, cwd=cwd)
         except NotImplementedError as e:  # pragma: no cover
             print(e)
