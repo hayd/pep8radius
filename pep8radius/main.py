@@ -14,7 +14,7 @@ except ImportError:  # py2, pragma: no cover
 from pep8radius.radius import Radius, RadiusFromDiff
 from pep8radius.shell import CalledProcessError  # with 2.6 compat
 
-__version__ = version = '0.9.1'
+__version__ = version = '0.9.2a0'
 
 
 DEFAULT_IGNORE = 'E24'
@@ -52,13 +52,13 @@ def main(args=None, vc=None, cwd=None, apply_config=False):
             args_set = args  # args is a Namespace
         if '--version' in args_set or getattr(args_set, 'version', 0):
             print(version)
-            sys.exit(0)
+            return 0
         if '--list-fixes' in args_set or getattr(args_set, 'list_fixes', 0):
             from autopep8 import supported_fixes
             for code, description in sorted(supported_fixes()):
                 print('{code} - {description}'.format(
                     code=code, description=description))
-            sys.exit(0)
+            return 0
 
         try:
             try:
@@ -69,16 +69,21 @@ def main(args=None, vc=None, cwd=None, apply_config=False):
                 r = Radius.from_diff(args.from_diff.read(),
                                      options=args, cwd=cwd)
             else:
+                print("oi")
+                import pep8radius
+                print(pep8radius.version)
                 r = Radius(rev=args.rev, options=args, vc=vc, cwd=cwd)
         except NotImplementedError as e:  # pragma: no cover
             print(e)
-            sys.exit(1)
+            return 1
         except CalledProcessError as c:  # pragma: no cover
             # cut off usage and exit
             output = c.output.splitlines()[0]
             print(output)
-            sys.exit(c.returncode)
+            return c.returncode
+
         r.fix()
+        return 0
 
     except KeyboardInterrupt:  # pragma: no cover
         return 1
@@ -180,6 +185,16 @@ def create_parser():
                     'if not passed, defaults are updated with any '
                     "config files in the project's root directory")
 
+    yp = parser.add_argument_group('yapf',
+                                   'Options for yapf, alternative to autopep8. '
+                                   'Currently any other options are ignored.')
+    yp.add_argument('-y', '--yapf', action='store_true',
+                    help='Use yapf rather than autopep8. '
+                    'This ignores other arguments outside of this group.')
+    yp.add_argument('--style', metavar='', default='pep8',
+                    help='style either pep8, google, name of file with style'
+                    'settings, or a dict')
+
     return parser
 
 
@@ -260,7 +275,7 @@ def _split_comma_separated(string):
 def _main(args=None, vc=None, cwd=None):  # pragma: no cover
     if args is None:
         args = sys.argv[1:]
-    return main(args=args, vc=vc, cwd=cwd, apply_config=True)
+    return sys.exit(main(args=args, vc=vc, cwd=cwd, apply_config=True))
 
 
 if __name__ == "__main__":  # pragma: no cover
