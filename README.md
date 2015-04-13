@@ -12,7 +12,21 @@ of) a branch.
 [![PyPi Monthly Downloads](http://img.shields.io/pypi/dm/pep8radius.svg)](https://pypi.python.org/pypi/pep8radius)
 
 
-Fixing the entire project of PEP8 infractions ("PEP8 storms") can lead to merge conflicts, add noise to merges / pull requests and break (git) blame. pep8radius solves this problem by fixing only those PEP8 infractions incontained on the lines of the project which you've been working, leaving these sections "better than you found it" whilst keeping your commits focused on the areas of the codebase you were actually working on.
+Fixing the entire project of PEP8 infractions ("PEP8 storms") can lead to merge
+conflicts, add noise to merges / pull requests and break (git) blame. pep8radius
+solves this problem by fixing only those PEP8 infractions incontained on the
+lines of the project which you've been working, leaving these sections "better
+than you found it" whilst keeping your commits focused on the areas of the
+codebase you were actually working on.
+
+Requirements
+------------
+pep8radius uses [autopep8](https://pypi.python.org/pypi/autopep8), and in turn
+[pep8](https://pypi.python.org/pypi/pep8). The docformatter option, to fix
+docstrings, uses [docformatter](https://pypi.python.org/pypi/docformatter).
+
+You can also use [yapf](https://pypi.python.org/pypi/yapf) as an alternative
+back-end.
 
 Installation
 ------------
@@ -81,11 +95,50 @@ For example:
 $ git diff master | pep8radius --diff --from-diff=-
 ```
 
-Requirements
+yapf
+----
+To use [yapf](https://pypi.python.org/pypi/yapf) as an alternative back-end, you
+can pass the `--yapf` option:
+```
+$ pep8radius master --diff --yapf
+
+$ pep8radius master --diff --yapf --style=google
+```
+*Note: This ignores autopep8 and docformatter specific arguments.*
+
+Config Files
 ------------
-pep8radius uses [autopep8](https://pypi.python.org/pypi/autopep8), and in turn
-[pep8](https://pypi.python.org/pypi/pep8). The docformatter option, to fix
-docstrings, uses [docformatter](https://pypi.python.org/pypi/docformatter).
+pep8radius looks for configuration files as described in the
+[pep8 docs](http://pep8.readthedocs.org/en/latest/intro.html#configuration).
+
+At the project level, you may have a `setup.cfg` which includes a pep8 section,
+you can use this to define defaults for pep8radius and autopep8:
+
+```
+[pep8]
+rev = master
+ignore = E226,E302,E41
+max-line-length = 160
+```
+
+By default, this will look for a user level default, you can suppress this
+by passing a blank to `global_config`:
+
+```
+[pep8]
+rev = staging
+global_config =
+```
+
+or perhaps you want to use yapf with google style:
+
+```
+[pep8]
+rev = master
+yapf = True
+style = google
+```
+*Note: style can also be a config file, or a dict (see the yapf docs).*
 
 VCS Support
 -----------
@@ -164,6 +217,15 @@ config:
                         don't look for and apply local config files; if not
                         passed, defaults are updated with any config files in
                         the project's root dir
+
+yapf:
+  Options for yapf, alternative to autopep8. Currently any other options are
+  ignored.
+
+  -y, --yapf            Use yapf rather than autopep8. This ignores other
+                        arguments outside of this group.
+  --style               style either pep8, google, name of file with
+                        stylesettings, or a dict
 
 Run before you commit, against a previous commit or branch before merging.
 ```

@@ -68,6 +68,8 @@ class Radius(object):
 
     @staticmethod
     def from_diff(diff, options=None, cwd=None):
+        """Create a Radius object from a diff rather than a reposistory.
+        """
         return RadiusFromDiff(diff=diff, options=options, cwd=cwd)
 
     def modified_lines(self, file_name):
@@ -207,6 +209,10 @@ def fix_code(source_code, line_ranges, options=None, verbose=0):
     if options is None:
         from pep8radius.main import parse_args
         options = parse_args()
+
+    if getattr(options, "yapf", False):
+        from yapf.yapflib.yapf_api import FormatCode
+        return FormatCode(source_code, style_config=options.style, lines=line_ranges)
 
     line_ranges = reversed(line_ranges)
     # Apply line fixes "up" the file (i.e. in reverse) so that
