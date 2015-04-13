@@ -32,7 +32,8 @@ INSTALL_REQUIRES = (
     ['autopep8 >= 1.0.4'] +
     (['argparse'] if version_info < (2, 7) else []) +
     ['colorama'] +
-    ['docformatter >= 0.7']
+    ['docformatter >= 0.7'] +
+    ['yapf >= 0.1.5']
 )
 
 setup(
