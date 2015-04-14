@@ -33,7 +33,7 @@ INSTALL_REQUIRES = (
     (['argparse'] if version_info < (2, 7) else []) +
     ['colorama'] +
     ['docformatter >= 0.7'] +
-    ['yapf >= 0.1.5']
+    (['yapf >= 0.1.5'] if version_info == (2, 7) or version_info >= (3, 4) else [])
 )
 
 setup(
