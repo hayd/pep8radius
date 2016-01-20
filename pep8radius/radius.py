@@ -212,7 +212,9 @@ def fix_code(source_code, line_ranges, options=None, verbose=0):
 
     if getattr(options, "yapf", False):
         from yapf.yapflib.yapf_api import FormatCode
-        return FormatCode(source_code, style_config=options.style, lines=line_ranges)
+        result = FormatCode(source_code, style_config=options.style, lines=line_ranges)
+        # yapf<0.3 returns diff as str, >=0.3 returns a tuple of (diff, changed)
+        return result[0] if isinstance(result, tuple) else result
 
     line_ranges = reversed(line_ranges)
     # Apply line fixes "up" the file (i.e. in reverse) so that
