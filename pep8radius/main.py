@@ -79,7 +79,9 @@ def main(args=None, vc=None, cwd=None, apply_config=False):
             print(output)
             return c.returncode
 
-        r.fix()
+        any_changes = r.fix()
+        if any_changes and args.error_status:
+            return 1
         return 0
 
     except KeyboardInterrupt:  # pragma: no cover
@@ -109,6 +111,10 @@ def create_parser():
 
     parser.add_argument('-d', '--diff', action='store_true', dest='diff',
                         help='print the diff of fixed source vs original')
+    parser.add_argument('--error-status', action='store_true',
+                        dest='error_status',
+                        help="return a shell status code of 1 if there are"
+                             " any fixes")
     parser.add_argument('-i', '--in-place', action='store_true',
                         help="make the fixes in place; modify the files")
     parser.add_argument('--no-color', action='store_true',

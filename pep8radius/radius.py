@@ -79,6 +79,7 @@ class Radius(object):
         """Runs fix_file on each modified file.
 
         - Prints progress and diff depending on options.
+        - Returns True if there were any changes
 
         """
         from pep8radius.diff import print_diff, udiff_lines_fixed
@@ -86,6 +87,7 @@ class Radius(object):
         n = len(self.filenames_diff)
         _maybe_print('Applying autopep8 to touched lines in %s file(s).' % n)
 
+        any_changes = False
         total_lines_changed = 0
         pep8_diffs = []
         for i, file_name in enumerate(self.filenames_diff, start=1):
@@ -96,8 +98,10 @@ class Radius(object):
             lines_changed = udiff_lines_fixed(p_diff) if p_diff else 0
             total_lines_changed += lines_changed
 
-            if p_diff and self.diff:
-                pep8_diffs.append(p_diff)
+            if p_diff:
+                any_changes = True
+                if self.diff:
+                    pep8_diffs.append(p_diff)
 
         if self.in_place:
             _maybe_print('pep8radius fixed %s lines in %s files.'
@@ -111,6 +115,8 @@ class Radius(object):
         if self.diff:
             for diff in pep8_diffs:
                 print_diff(diff, color=self.color)
+
+        return any_changes
 
     def fix_file(self, file_name):
         """Apply autopep8 to the diff lines of a file.
